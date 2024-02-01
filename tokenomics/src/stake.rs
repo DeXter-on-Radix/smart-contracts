@@ -36,6 +36,7 @@ mod stake {
 
         }
     }
+
     struct Stake {
         // Define what resources and data will be managed by Stake components
         stake_vault: FungibleVault,
@@ -83,11 +84,11 @@ mod stake {
                 burner_updater => rule!(deny_all);
             })
             .withdraw_roles(withdraw_roles! {
-                withdrawer => rule!(deny_all);
+                withdrawer => rule!(allow_all);
                 withdrawer_updater => rule!(deny_all);
             })
             .deposit_roles(deposit_roles! {
-                depositor => rule!(require(global_caller(component_address)));
+                depositor => rule!(allow_all);
                 depositor_updater => rule!(deny_all);
             })
             .freeze_roles(freeze_roles! {
@@ -163,10 +164,7 @@ mod stake {
             };
             let nft_receipt: NonFungibleBucket = self
                 .nft_receipt_resource_manager
-                .mint_non_fungible(
-                    &NonFungibleLocalId::ruid(Runtime::generate_ruid()),
-                    nft_receipt_data,
-                )
+                .mint_ruid_non_fungible(nft_receipt_data)
                 .as_non_fungible();
             // Return the NFT receipt
             return nft_receipt;

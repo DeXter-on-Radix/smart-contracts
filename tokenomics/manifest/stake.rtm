@@ -1,0 +1,26 @@
+## Lock fee
+CALL_METHOD
+    Address("FEE PAYER COMPONENT ADDRESS")
+    "lock_fee"
+    Decimal("LOCK FEE AMOUNT");
+## Withdraw tokens 
+CALL_METHOD
+    Address("ACCOUNT COMPONENT ADDRESS")
+    "withdraw"
+    Address("STAKE TOKEN RESOURCE ADDRESS")
+    Decimal("WITHDRAW AMOUNT");
+## Withdraw tokens from worktop and put them into bucket
+TAKE_FROM_WORKTOP
+    Address("STAKE TOKEN RESOURCE ADDRESS")
+    Decimal("WITHDRAW AMOUNT")
+    Bucket("BUCKET NAME");
+## Deposit tokens into method
+CALL_METHOD
+    Address("COMPONENT ADDRESS")
+    "stake"
+    Bucket("BUCKET NAME");
+## Return all tokens from worktop to account
+CALL_METHOD
+    Address("ACCOUNT COMPONENT ADDRESS")
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP");
