@@ -9,14 +9,25 @@ CALL_METHOD
     "withdraw"
     Address("STAKE TOKEN RESOURCE ADDRESS")
     Decimal("WITHDRAW AMOUNT");
+## Withdraw nft receipt
+CALL_METHOD
+    Address("ACCOUNT COMPONENT ADDRESS")
+    "withdraw"
+    Address("NFT RECEIPT RESOURCE ADDRESS")
+    Decimal("WITHDRAW AMOUNT");
 ## Withdraw tokens from worktop and put them into bucket
 TAKE_ALL_FROM_WORKTOP
     Address("STAKE TOKEN RESOURCE ADDRESS")
     Bucket("STAKE TOKEN BUCKET");
+## Withdraw nft receipt from worktop and put them into bucket
+TAKE_ALL_FROM_WORKTOP
+    Address("NFT RECEIPT RESOURCE ADDRESS")
+    Bucket("NFT RECEIPT BUCKET");
 ## Deposit tokens into method
 CALL_METHOD
     Address("COMPONENT ADDRESS")
-    "stake"
+    "add_stake"
+    Bucket("NFT RECEIPT BUCKET")
     Bucket("STAKE TOKEN BUCKET");
 ## Return all tokens from worktop to account
 CALL_METHOD

@@ -3,21 +3,22 @@ CALL_METHOD
     Address("FEE PAYER COMPONENT ADDRESS")
     "lock_fee"
     Decimal("LOCK FEE AMOUNT");
-## Withdraw tokens 
+## Withdraw nft receipt
 CALL_METHOD
     Address("ACCOUNT COMPONENT ADDRESS")
     "withdraw"
-    Address("STAKE TOKEN RESOURCE ADDRESS")
+    Address("NFT RECEIPT RESOURCE ADDRESS")
     Decimal("WITHDRAW AMOUNT");
-## Withdraw tokens from worktop and put them into bucket
+## Withdraw nft receipt from worktop and put them into bucket
 TAKE_ALL_FROM_WORKTOP
-    Address("STAKE TOKEN RESOURCE ADDRESS")
-    Bucket("STAKE TOKEN BUCKET");
-## Deposit tokens into method
+    Address("NFT RECEIPT RESOURCE ADDRESS")
+    Bucket("NFT RECEIPT BUCKET");
+## Deposit nft receipt into method
 CALL_METHOD
     Address("COMPONENT ADDRESS")
-    "stake"
-    Bucket("STAKE TOKEN BUCKET");
+    "unstake"
+    Bucket("NFT RECEIPT BUCKET")
+    Decimal("UNSTAKE AMOUNT")
 ## Return all tokens from worktop to account
 CALL_METHOD
     Address("ACCOUNT COMPONENT ADDRESS")
