@@ -1,0 +1,21 @@
+## Lock fee
+CALL_METHOD
+    Address("FEE PAYER COMPONENT ADDRESS")
+    "lock_fee"
+    Decimal("LOCK FEE AMOUNT");
+# Create proof from nft receipt
+CALL_METHOD
+    Address("ACCOUNT COMPONENT ADDRESS")
+    "create_proof_of_non_fungibles"
+    Address("NFT RECEIPT RESOURCE ADDRESS")
+    Array<NonFungibleLocalId>(NonFungibleLocalId("{NON FUNGIBLE LOCAL ID}"));
+## Take proof from auth zone for method call    
+POP_FROM_AUTH_ZONE
+    Proof("NFT RECEIPT PROOF");
+## Deposit proof into method
+CALL_METHOD
+    Address("COMPONENT ADDRESS")
+    "check_unstake_status"
+    Proof("NFT RECEIPT PROOF"); 
+## Drop all proofs
+DROP_ALL_PROOFS;

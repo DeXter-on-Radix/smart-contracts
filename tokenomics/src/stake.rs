@@ -369,16 +369,20 @@ mod stake {
             let hours_left = minutes_left / 60;
             let days_left = hours_left / 24;
             // Display the remaining time
-            info!(
-                "There are {} epochs left until you can unstake.",
+            if epochs_left > 0 {
+                info!(
+                "There are {} epochs left until you can withdraw your stake and accrued rewards.",
                 epochs_left
             );
-            if days_left >= 3 {
-                info!("This is approximately {} days.", days_left);
-            } else if hours_left < 72 && hours_left >= 1 {
-                info!("This is approximately {} hours.", hours_left);
+                if days_left >= 3 {
+                    info!("This is approximately {} days.", days_left);
+                } else if hours_left < 72 && hours_left >= 1 {
+                    info!("This is approximately {} hours.", hours_left);
+                } else {
+                    info!("This is approximately {} minutes.", minutes_left);
+                }
             } else {
-                info!("This is approximately {} minutes.", minutes_left);
+                info!("You can now withdraw your stake and accrued rewards.");
             }
         }
 
