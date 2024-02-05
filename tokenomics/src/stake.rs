@@ -375,8 +375,10 @@ mod stake {
             );
             if days_left >= 3 {
                 info!("This is approximately {} days.", days_left);
-            } else {
+            } else if hours_left < 72 && hours_left >= 1 {
                 info!("This is approximately {} hours.", hours_left);
+            } else {
+                info!("This is approximately {} minutes.", minutes_left);
             }
         }
 
