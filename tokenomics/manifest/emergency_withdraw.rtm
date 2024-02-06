@@ -13,12 +13,11 @@ CALL_METHOD
 TAKE_ALL_FROM_WORKTOP
     Address("${resource}")
     Bucket("${bucket_name}");
-## Deposit nft receipt into method
+## Call method
 CALL_METHOD
     Address("${component}")
-    "unstake"
+    "emergency_withdraw"
     Bucket("${bucket_name}");
-    Decimal("${amount}");
 ## Return all tokens from worktop to account
 CALL_METHOD
     Address("${account}")

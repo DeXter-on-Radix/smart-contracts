@@ -13,6 +13,8 @@ resim reset
 resim new-account
 resim new-badge-fixed --name admin_badge --symbol ADMN 1
 resim publish .
+resim call-function <PACKAGE_ADDRESS> Stake instantiate_stake <OWNER_BADGE_ADDRESS> <ADMIN_BADGE_ADDRESS> <UNSTAKE_PERIOD_AMOUNT> <STAKING_TOKEN_ADDRESS>
+resim run manifest/${manifest_name}.rtm
 ```
 
 ## Contributing

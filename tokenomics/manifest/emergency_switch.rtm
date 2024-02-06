@@ -12,7 +12,6 @@ CALL_METHOD
 ## Call method
 CALL_METHOD
     Address("${component}")
-    "update_unstake_period"
-    "${amount}"u64;
+    "emergency_switch";
 ## Drop all proofs
 DROP_ALL_PROOFS;

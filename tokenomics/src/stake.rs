@@ -1,12 +1,12 @@
 use scrypto::prelude::*;
 
-#[derive(ScryptoSbor, PartialEq)]
+#[derive(ScryptoSbor, PartialEq, Debug)]
 pub enum Status {
     On,
     Off,
 }
 
-#[derive(ScryptoSbor, NonFungibleData)]
+#[derive(ScryptoSbor, NonFungibleData, Debug)]
 pub struct NFTReceiptData {
     staking_token: ResourceAddress,
     #[mutable]
@@ -15,7 +15,7 @@ pub struct NFTReceiptData {
     #[mutable]
     unstake_period_end: u64,
     #[mutable]
-    pending_rewards: Decimal,
+    pending_unstake_amount: Decimal,
 }
 
 #[blueprint]
@@ -36,7 +36,7 @@ mod stake {
 
         }
     }
-
+    #[derive(Debug)]
     struct Stake {
         // Define what resources and data will be managed by Stake components
         stake_vault: FungibleVault,
@@ -155,13 +155,15 @@ mod stake {
             // Put the stake in the vault
             let deposit_amount = stake_tokens.amount();
             self.stake_vault.put(stake_tokens);
+            info!("vault: {:?}", self.stake_vault);
             // Mint an NFT receipt
             let nft_receipt_data = NFTReceiptData {
                 staking_token: self.staking_token,
                 amount_staked: deposit_amount,
                 unstake_period_end: 0,
-                pending_rewards: Decimal::from(0),
+                pending_unstake_amount: Decimal::from(0),
             };
+            info!("nft_receipt_data: {:?}", nft_receipt_data);
             let nft_receipt: NonFungibleBucket = self
                 .nft_receipt_resource_manager
                 .mint_ruid_non_fungible(nft_receipt_data)
@@ -201,17 +203,20 @@ mod stake {
             let nft_receipt_data: NFTReceiptData = self
                 .nft_receipt_resource_manager
                 .get_non_fungible_data(&nft_id);
+            info!("nft_receipt_data: {:?}", nft_receipt_data);
             // Update the staked amount
             let additional_stake_amount = additional_stake_tokens.amount();
             let new_stake_amount = nft_receipt_data.amount_staked + additional_stake_amount;
             // Put the additional stake in the vault
             self.stake_vault.put(additional_stake_tokens);
+            info!("vault: {:?}", self.stake_vault);
             // Update the NFT data
             self.nft_receipt_resource_manager.update_non_fungible_data(
                 &nft_id,
                 &"amount_staked",
                 new_stake_amount,
             );
+            info!("amount_staked: {:?}", nft_receipt_data.amount_staked);
             // Return the updated receipt
             return receipt;
         }
@@ -243,6 +248,7 @@ mod stake {
             let nft_receipt_data: NFTReceiptData = self
                 .nft_receipt_resource_manager
                 .get_non_fungible_data(&nft_id);
+            info!("nft_receipt_data: {:?}", nft_receipt_data);
             // Check if amount is valid
             assert!(amount <= nft_receipt_data.amount_staked, "Invalid amount");
             // Check that unstake period is 0
@@ -257,17 +263,25 @@ mod stake {
                 &"unstake_period_end",
                 new_unstake_period_end,
             );
-            // Check that pending rewards are zero
-            assert!(
-                nft_receipt_data.pending_rewards == Decimal::from(0),
-                "Pending rewards must be zero"
+            info!(
+                "unstake_period_end: {:?}",
+                nft_receipt_data.unstake_period_end
             );
-            // Update the NFT data with pending rewards
-            let new_pending_rewards = nft_receipt_data.pending_rewards + amount;
+            // Check that pending unstake amount are zero
+            assert!(
+                nft_receipt_data.pending_unstake_amount == Decimal::from(0),
+                "Pending unstake amount must be zero"
+            );
+            // Update the NFT data with pending unstake amount
+            let new_pending_unstake_amount = nft_receipt_data.pending_unstake_amount + amount;
             self.nft_receipt_resource_manager.update_non_fungible_data(
                 &nft_id,
-                &"pending_rewards",
-                new_pending_rewards,
+                &"pending_unstake_amount",
+                new_pending_unstake_amount,
+            );
+            info!(
+                "pending_unstake_amount: {:?}",
+                nft_receipt_data.pending_unstake_amount
             );
             // Update the NFT data with the new staked amount
             let new_stake_amount = nft_receipt_data.amount_staked - amount;
@@ -276,6 +290,7 @@ mod stake {
                 &"amount_staked",
                 new_stake_amount,
             );
+            info!("amount_staked: {:?}", nft_receipt_data.amount_staked);
             // Return the nft receipt
             return receipt;
         }
@@ -297,9 +312,10 @@ mod stake {
             );
             // Retrieve the NFT ID and data
             let nft_id: NonFungibleLocalId = receipt.non_fungible_local_id();
-            let mut nft_receipt_data: NFTReceiptData = self
+            let nft_receipt_data: NFTReceiptData = self
                 .nft_receipt_resource_manager
                 .get_non_fungible_data(&nft_id);
+            info!("nft_receipt_data: {:?}", nft_receipt_data);
             // Check if the unstake period has ended
             assert!(
                 Runtime::current_epoch().number() >= nft_receipt_data.unstake_period_end,
@@ -311,8 +327,9 @@ mod stake {
                 "Unstake period must be greater than zero"
             );
             // Withdraw the staked amount
-            let withdraw_amount = nft_receipt_data.pending_rewards;
+            let withdraw_amount = nft_receipt_data.pending_unstake_amount;
             let withdraw_tokens: FungibleBucket = self.stake_vault.take(withdraw_amount);
+            info!("vault: {:?}", self.stake_vault);
 
             // Check the staked amount and take appropriate action
             if nft_receipt_data.amount_staked.is_zero() {
@@ -322,17 +339,25 @@ mod stake {
                 return (None, Some(withdraw_tokens));
             } else {
                 // Update the NFT data for any remaining staked amount
-                let reset_unstake_peirod_end = nft_receipt_data.unstake_period_end = 0;
-                let reset_pending_rewards = nft_receipt_data.pending_rewards = Decimal::ZERO;
+                let reset_unstake_period_end: u64 = 0;
+                let reset_pending_unstake_amount: Decimal = Decimal::ZERO;
                 self.nft_receipt_resource_manager.update_non_fungible_data(
                     &nft_id,
                     &"unstake_period_end",
-                    &reset_unstake_peirod_end,
+                    &reset_unstake_period_end,
+                );
+                info!(
+                    "unstake_period_end: {:?}",
+                    nft_receipt_data.unstake_period_end
                 );
                 self.nft_receipt_resource_manager.update_non_fungible_data(
                     &nft_id,
-                    &"pending_rewards",
-                    &reset_pending_rewards,
+                    &"pending_unstake_amount",
+                    &reset_pending_unstake_amount,
+                );
+                info!(
+                    "pending_unstake_amount: {:?}",
+                    nft_receipt_data.pending_unstake_amount
                 );
 
                 return (Some(receipt), Some(withdraw_tokens));
@@ -357,6 +382,7 @@ mod stake {
             let nft_receipt_data: NFTReceiptData = self
                 .nft_receipt_resource_manager
                 .get_non_fungible_data(&nft_id);
+            info!("nft_receipt_data: {:?}", nft_receipt_data);
             // Calculate the number of epochs left
             let current_epoch = Runtime::current_epoch().number();
             let epochs_left = if nft_receipt_data.unstake_period_end > current_epoch {
@@ -371,9 +397,9 @@ mod stake {
             // Display the remaining time
             if epochs_left > 0 {
                 info!(
-                "There are {} epochs left until you can withdraw your stake and accrued rewards.",
-                epochs_left
-            );
+                    "There are {} epochs left until you can withdraw your stake.",
+                    epochs_left
+                );
                 if days_left >= 3 {
                     info!("This is approximately {} days.", days_left);
                 } else if hours_left < 72 && hours_left >= 1 {
@@ -382,7 +408,7 @@ mod stake {
                     info!("This is approximately {} minutes.", minutes_left);
                 }
             } else {
-                info!("You can now withdraw your stake and accrued rewards.");
+                info!("You can now withdraw your stake.");
             }
         }
 
@@ -401,6 +427,10 @@ mod stake {
             );
             // Update unstake period
             self.unstake_period = new_unstake_period;
+            info!(
+                "Unstake period has been updated to {} epochs",
+                self.unstake_period
+            );
         }
 
         pub fn emergency_switch(&mut self) {
@@ -408,6 +438,10 @@ mod stake {
                 Status::On => self.contract_status = Status::Off,
                 Status::Off => self.contract_status = Status::On,
             }
+            info!(
+                "Contract status has been switched to {:?}",
+                self.contract_status
+            );
         }
         pub fn emergency_withdraw(&mut self, receipt: NonFungibleBucket) -> FungibleBucket {
             // Check if the contract is in emergency mode
@@ -429,10 +463,12 @@ mod stake {
             let nft_receipt_data: NFTReceiptData = self
                 .nft_receipt_resource_manager
                 .get_non_fungible_data(&nft_id);
-            // Withdraw the staked amount and pending rewards
+            info!("nft_receipt_data: {:?}", nft_receipt_data);
+            // Withdraw the staked amount and pending unstake amount
             let withdraw_tokens = self
                 .stake_vault
-                .take(nft_receipt_data.amount_staked + nft_receipt_data.pending_rewards);
+                .take(nft_receipt_data.amount_staked + nft_receipt_data.pending_unstake_amount);
+            info!("vault: {:?}", self.stake_vault);
             // Burn the NFT receipt
             self.nft_receipt_resource_manager.burn(receipt);
             // Return the withdrawn tokens

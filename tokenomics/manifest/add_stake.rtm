@@ -1,36 +1,38 @@
 ## Lock fee
 CALL_METHOD
-    Address("FEE PAYER COMPONENT ADDRESS")
+    Address("${account}")
     "lock_fee"
-    Decimal("LOCK FEE AMOUNT");
+    Decimal("${amount}");
 ## Withdraw tokens 
 CALL_METHOD
-    Address("ACCOUNT COMPONENT ADDRESS")
+    Address("${account}")
     "withdraw"
-    Address("STAKE TOKEN RESOURCE ADDRESS")
-    Decimal("WITHDRAW AMOUNT");
+    Address("${resource}")
+    Decimal("${amount}");
 ## Withdraw nft receipt
 CALL_METHOD
-    Address("ACCOUNT COMPONENT ADDRESS")
+    Address("${account}")
     "withdraw"
-    Address("NFT RECEIPT RESOURCE ADDRESS")
-    Decimal("WITHDRAW AMOUNT");
+    Address("${resource}")
+    Decimal("${amount}");
 ## Withdraw tokens from worktop and put them into bucket
 TAKE_ALL_FROM_WORKTOP
-    Address("STAKE TOKEN RESOURCE ADDRESS")
-    Bucket("STAKE TOKEN BUCKET");
+    Address("${resource}")
+    Bucket("${bucket_name}");
 ## Withdraw nft receipt from worktop and put them into bucket
 TAKE_ALL_FROM_WORKTOP
-    Address("NFT RECEIPT RESOURCE ADDRESS")
-    Bucket("NFT RECEIPT BUCKET");
+    Address("${resource}")
+    Bucket("${bucket_name}");
 ## Deposit tokens into method
 CALL_METHOD
-    Address("COMPONENT ADDRESS")
+    Address("${component}")
     "add_stake"
-    Bucket("NFT RECEIPT BUCKET")
-    Bucket("STAKE TOKEN BUCKET");
+    ## Receipt bucket
+    Bucket("${bucket_name}")
+    ## Token bucket
+    Bucket("${bucket_name}");
 ## Return all tokens from worktop to account
 CALL_METHOD
-    Address("ACCOUNT COMPONENT ADDRESS")
+    Address("${account}")
     "deposit_batch"
     Expression("ENTIRE_WORKTOP");
