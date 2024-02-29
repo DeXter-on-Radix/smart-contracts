@@ -3,16 +3,16 @@ CALL_METHOD
     Address("${account}")
     "lock_fee"
     Decimal("${amount}");
-# Withdraw tokens 
+## Withdraw the platform badge
 CALL_METHOD
   Address("${account}")
   "withdraw"
   Address("${resource}")
   Decimal("${amount}");
-## Withdraw tokens from worktop and put them into bucket
+## Withdraw platform badge from worktop and put in bucket
 TAKE_ALL_FROM_WORKTOP
   Address("${resource}")
-  Bucket("tokens");
+  Bucket("${bucket_name}");
 # Instantiate stake
 CALL_FUNCTION
     Address("${package}")
@@ -23,7 +23,7 @@ CALL_FUNCTION
 # Owner badge
     Address("${resource}")
 # Platform badge
-    Address("${resource}")
+    Bucket("${bucket_name}")
 # Claim frequency
     "${amount}"u64
 # Try deposit batch or refund
