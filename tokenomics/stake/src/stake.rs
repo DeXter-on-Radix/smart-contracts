@@ -9,9 +9,6 @@ pub enum Status {
 #[blueprint]
 mod stake {
     enable_method_auth! {
-        roles {
-            admin => updatable_by: [OWNER];
-        },
         methods {
             stake => PUBLIC;
             unstake => PUBLIC;
