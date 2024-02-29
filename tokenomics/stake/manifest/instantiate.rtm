@@ -19,13 +19,13 @@ CALL_FUNCTION
     "Stake"
     "instantiate_stake"
 # Staking token
-    Address("${resource}");
+    Address("${resource}")
 # Owner badge
     Address("${resource}")
 # Platform badge
     Bucket("${bucket_name}")
 # Claim frequency
-    "${amount}"u64
+    "${amount}"u64;
 # Try deposit batch or refund
 CALL_METHOD
     Address("${account}")
