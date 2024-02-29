@@ -1,0 +1,34 @@
+# Lock fee
+CALL_METHOD
+    Address("${account}")
+    "lock_fee"
+    Decimal("${amount}");
+# Withdraw tokens 
+CALL_METHOD
+  Address("${account}")
+  "withdraw"
+  Address("${resource}")
+  Decimal("${amount}");
+## Withdraw tokens from worktop and put them into bucket
+TAKE_ALL_FROM_WORKTOP
+  Address("${resource}")
+  Bucket("tokens");
+# Instantiate stake
+CALL_FUNCTION
+    Address("${package}")
+    "Stake"
+    "instantiate_stake"
+# Staking token
+    Address("${resource}");
+# Owner badge
+    Address("${resource}")
+# Platform badge
+    Address("${resource}")
+# Claim frequency
+    "${amount}"u64
+# Try deposit batch or refund
+CALL_METHOD
+    Address("${account}")
+    "try_deposit_batch_or_refund"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>();
