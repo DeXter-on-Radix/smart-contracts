@@ -1,0 +1,10 @@
+# Lock fee
+CALL_METHOD
+    Address("${account}")
+    "lock_fee"
+    Decimal("${amount}");
+# Show redemption value
+CALL_METHOD
+    Address("${component}")
+    "show_redemption_value"
+    Decimal("${amount}");

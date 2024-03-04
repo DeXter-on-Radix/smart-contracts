@@ -14,8 +14,9 @@ mod stake {
             unstake => PUBLIC;
             show_redemption_value => PUBLIC;
             show_vault_amount => PUBLIC;
-            airdrop => restrict_to: [OWNER];
+            deposit => restrict_to: [OWNER];
             emergency_switch => restrict_to: [OWNER];
+
         }
     }
     #[derive(Debug)]
@@ -107,6 +108,7 @@ mod stake {
                 stake_tokens.resource_address() == self.stake_pool_token,
                 "Invalid staking token"
             );
+
             // Stake the tokens and receive the pool units
             let tokens = self.stake_pool.contribute(stake_tokens);
 
@@ -121,6 +123,7 @@ mod stake {
                 pool_units.amount() > Decimal::from(0),
                 "Unstake amount must be greater than zero"
             );
+
             // Deposit the pool units in return for the staking tokens
             let tokens = self.stake_pool.redeem(pool_units);
 
@@ -135,18 +138,27 @@ mod stake {
                 pool_units > Decimal::from(0),
                 "Unstake amount must be greater than zero"
             );
+
             // Get the redemption value of the pool units
-            self.stake_pool.get_redemption_value(pool_units);
+            info!(
+                "Redeeming {:?} pool units will return {:?} tokens.",
+                pool_units,
+                self.stake_pool.get_redemption_value(pool_units)
+            );
         }
 
         pub fn show_vault_amount(&mut self) {
             // Check if the contract is active
             assert!(self.contract_status == Status::On, "Contract is not active");
+
             // Get the amount of tokens in the vault
-            self.stake_pool.get_vault_amount();
+            info!(
+                "There are currently {:?} tokens in the vault.",
+                self.stake_pool.get_vault_amount()
+            );
         }
 
-        pub fn airdrop(&mut self, stake_tokens: Bucket) {
+        pub fn deposit(&mut self, stake_tokens: Bucket) {
             // Check if the contract is active
             assert!(self.contract_status == Status::On, "Contract is not active");
             // Check if the stake amount is greater than zero
@@ -159,6 +171,7 @@ mod stake {
                 stake_tokens.resource_address() == self.stake_pool_token,
                 "Invalid staking token"
             );
+
             // Deposit tokens into the stake pool
             self.stake_pool.protected_deposit(stake_tokens);
         }
