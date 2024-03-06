@@ -14,7 +14,9 @@ mod stake {
             unstake => PUBLIC;
             show_redemption_value => PUBLIC;
             show_vault_amount => PUBLIC;
+            refill_rewards => PUBLIC;
             deposit => restrict_to: [OWNER];
+            update_claim_frequency => restrict_to: [OWNER];
             emergency_switch => restrict_to: [OWNER];
 
         }
@@ -27,8 +29,8 @@ mod stake {
         stake_pool_token: ResourceAddress,
         claim_frequency: u64,
         owner_badge: ResourceAddress,
-        platform_badge_vault: NonFungibleVault,
-        rewards_pool: Vec<FungibleVault>,
+        platform_badge: NonFungibleGlobalId,
+        rewards_pool: HashMap<ResourceAddress, FungibleVault>,
         contract_status: Status,
     }
 
@@ -36,18 +38,13 @@ mod stake {
         pub fn instantiate_stake(
             stake_pool_token: ResourceAddress,
             owner_badge: ResourceAddress,
-            platform_badge: NonFungibleBucket,
+            platform_badge: NonFungibleGlobalId,
             claim_frequency: u64,
         ) -> Global<Stake> {
             // Check if the claim frequency is greater than zero
             assert!(
                 claim_frequency > 0,
                 "Claim frequency must be greater than zero"
-            );
-            // Check if the platform badge amount is exactly one
-            assert!(
-                platform_badge.amount() == Decimal::from(1),
-                "Must deposit exactly one platform badge"
             );
             // Set Up Actor Virtual Badge
             let (address_reservation, component_address) =
@@ -71,8 +68,8 @@ mod stake {
                 stake_pool_token,
                 claim_frequency,
                 owner_badge,
-                platform_badge_vault: NonFungibleVault::with_bucket(platform_badge),
-                rewards_pool: Vec::new(),
+                platform_badge,
+                rewards_pool: HashMap::new(),
                 contract_status: Status::On,
             }
             .instantiate()
@@ -174,6 +171,73 @@ mod stake {
 
             // Deposit tokens into the stake pool
             self.stake_pool.protected_deposit(stake_tokens);
+        }
+
+        pub fn refill_rewards(
+            &mut self,
+            platform_badge_proof: NonFungibleProof,
+            rewards: Vec<FungibleBucket>,
+        ) {
+            // Check if the contract is active
+            assert!(self.contract_status == Status::On, "Contract is not active");
+            // Check if the platform badge is valid
+            assert!(
+                platform_badge_proof.resource_address() == self.platform_badge.resource_address(),
+                "Invalid NFT Resource Address"
+            );
+            // Validate the platform badge proof
+            let checked_proof = platform_badge_proof.check_with_message(
+                self.platform_badge.resource_address(),
+                "Invalid Platform Badge Proof",
+            );
+            // Retrieve the NFT ID
+            let nft_id: NonFungibleLocalId = checked_proof.non_fungible_local_id();
+            // Check if the platform badge is the correct one in the collection
+            assert!(
+                nft_id == self.platform_badge.local_id().clone(),
+                "Invalid NFT ID"
+            );
+            // Iterate over the rewards buckets
+            for reward in rewards.into_iter() {
+                let resource_address = reward.resource_address();
+
+                let rewards_pool_entry = self.rewards_pool.get_mut(&resource_address);
+
+                // Check if a vault for this resource exists
+                match rewards_pool_entry {
+                    Some(vault) => {
+                        // rewards_pool_entry.clone().unwrap().put(reward);
+                        // .put(reward);
+                        vault.put(reward);
+                    }
+                    None => {
+                        let mut new_vault: FungibleVault = FungibleVault::new(resource_address);
+                        new_vault.put(reward);
+                        self.rewards_pool.insert(resource_address, new_vault);
+                    }
+                }
+            }
+        }
+
+        pub fn update_claim_frequency(&mut self, new_claim_frequency: u64) {
+            // Check if the contract is active
+            assert!(self.contract_status == Status::On, "Contract is not active");
+            // Check if the new claim frequency is greater than zero
+            assert!(
+                new_claim_frequency > 0,
+                "Claim frequency must be greater than zero"
+            );
+            // Check if the new claim frequency is different from the current claim frequency
+            assert!(
+                new_claim_frequency != self.claim_frequency,
+                "Claim frequency is already set to the new value"
+            );
+            // Update claim frequency
+            self.claim_frequency = new_claim_frequency;
+            info!(
+                "Claim frequency has been updated to {} epochs",
+                self.claim_frequency
+            );
         }
 
         pub fn emergency_switch(&mut self) {

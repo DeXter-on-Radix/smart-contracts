@@ -13,7 +13,7 @@ resim reset
 resim new-account
 resim new-simple-badge --name platform_badge --symbol PLTBG
 resim publish .
-resim call-function <PACKAGE_ADDRESS> Stake instantiate_stake <STAKING_TOKEN_ADDRESS> <OWNER_BADGE_ADDRESS> <PLATFORM_BADGE> <CLAIM_FREQUENCY> 
+resim call-function <PACKAGE_ADDRESS> Stake instantiate_stake <STAKING_TOKEN_ADDRESS> <OWNER_BADGE_ADDRESS> <PLATFORM_BADGE_GLOBAL_ADDRESS> <CLAIM_FREQUENCY> 
 resim run manifest/${manifest_name}.rtm
 ```
 
