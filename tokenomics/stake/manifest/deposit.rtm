@@ -3,7 +3,6 @@ CALL_METHOD
     Address("${account}")
     "lock_fee"
     Decimal("${amount}");
-
 ## Create proof from owner badge
 CALL_METHOD
   Address("${account}")
@@ -12,25 +11,21 @@ CALL_METHOD
     Array<NonFungibleLocalId>(
         NonFungibleLocalId("${#non_fungible_local_id#}")
     );
-
 ## Withdraw tokens 
 CALL_METHOD
   Address("${account}")
   "withdraw"
   Address("${resource}")
   Decimal("${amount}");
-
 ## Withdraw tokens from worktop and put them into bucket
 TAKE_ALL_FROM_WORKTOP
   Address("${resource}")
   Bucket("${bucket_name}");
-
 ## Deposit tokens into method
 CALL_METHOD
 	Address("${component}")
 	"deposit"
 	Bucket("${bucket_name}");
-
 ## Return all tokens from worktop to account
 CALL_METHOD
     Address("${account}")

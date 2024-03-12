@@ -74,9 +74,9 @@ mod stake {
             unstake_period: u64,
             stake_pool_synth_name: String,
             stake_pool_synth_token_symbol: String,
+            stake_pool_synth_description: String,
             stake_pool_lp_token_name: String,
             stake_pool_lp_token_symbol: String,
-            stake_pool_synth_description: String,
             owner_badge: Bucket,
         ) -> (Global<Stake>, Bucket) {
             // Set up actor virtual badge
@@ -160,11 +160,11 @@ mod stake {
                 },
             )
             .mint_roles(mint_roles! {
-                minter => rule!(require(global_component_caller_badge.resource_address().clone()));
+                minter => rule!(require(global_caller(component_address)));
                 minter_updater => rule!(deny_all);
             })
             .burn_roles(burn_roles! {
-              burner => rule!(require(global_component_caller_badge.resource_address().clone()));
+              burner => rule!(require(global_caller(component_address)));
               burner_updater => rule!(deny_all);
             })
             .create_with_no_initial_supply();
@@ -283,15 +283,18 @@ mod stake {
             // Put the real stake in the vault
             let deposit_amount = stake_tokens_actual.amount();
             self.stake_vault_actual.put(stake_tokens_actual);
-            info!("Actual token vault: {:?}", self.stake_vault_actual);
+            info!("Actual token vault: {:?}", deposit_amount.clone());
 
             // Mint an equal amount of synthetic tokens
             let minted_tokens = self.stake_pool_synth_token_manager.mint(deposit_amount);
-            info!("Minted synthetic tokens: {:?}", minted_tokens);
+            info!(
+                "Minted synthetic tokens: {:?}",
+                minted_tokens.amount().clone()
+            );
 
             // Stake the synthetic tokens and receive the pool units; returning them to the user
             let tokens = self.stake_pool_synth.contribute(minted_tokens);
-            info!("Minted pool units: {:?}", tokens);
+            info!("Minted pool units: {:?}", tokens.amount().clone());
 
             return tokens;
         }
@@ -346,7 +349,10 @@ mod stake {
 
             // Store pool units inside the component
             self.stake_vault_lp_token.put(pool_units);
-            info!("Pool units vault: {:?}", self.stake_vault_lp_token);
+            info!(
+                "Pool units vault: {:?}",
+                self.stake_vault_lp_token.amount().clone()
+            );
 
             // Return the NFT receipt
             return nft_claim_receipt;
@@ -395,15 +401,18 @@ mod stake {
             let take_pool_units = self
                 .stake_vault_lp_token
                 .take(nft_claim_receipt_data.pool_units);
-            info!("Pool units: {:?}", take_pool_units);
+            info!("Pool units: {:?}", take_pool_units.amount().clone());
 
             // Redeem the pool units in return for the synthetic staking tokens
             let synth_tokens = self.stake_pool_synth.redeem(take_pool_units);
-            info!("Synthetic tokens: {:?}", synth_tokens);
+            info!("Synthetic tokens: {:?}", synth_tokens.amount().clone());
 
             // Withdraw the same amount of actual staking tokens from the vault
             let withdrawn_tokens = self.stake_vault_actual.take(synth_tokens.amount());
-            info!("Withdrawn actual tokens: {:?}", withdrawn_tokens);
+            info!(
+                "Withdrawn actual tokens: {:?}",
+                withdrawn_tokens.amount().clone()
+            );
 
             // Burn the synthetic staking tokens
             info!(
@@ -512,11 +521,17 @@ mod stake {
             // Put the real stake in the vault
             let deposit_amount = stake_tokens_actual.amount();
             self.stake_vault_actual.put(stake_tokens_actual);
-            info!("Actual token vault: {:?}", self.stake_vault_actual);
+            info!(
+                "Actual token vault: {:?}",
+                self.stake_vault_actual.amount().clone()
+            );
 
             // Mint an equal amount of synthetic tokens
             let minted_tokens = self.stake_pool_synth_token_manager.mint(deposit_amount);
-            info!("Minted synthetic tokens: {:?}", minted_tokens);
+            info!(
+                "Minted synthetic tokens: {:?}",
+                minted_tokens.amount().clone()
+            );
 
             // Deposit tokens into the stake pool
             self.stake_pool_synth.protected_deposit(minted_tokens);
@@ -585,11 +600,14 @@ mod stake {
 
             // Redeem the pool units in return for the synthetic staking tokens
             let tokens = self.stake_pool_synth.redeem(pool_units);
-            info!("Redeemed synthetic tokens: {:?}", tokens);
+            info!("Redeemed synthetic tokens: {:?}", tokens.amount().clone());
 
             // Withdraw the same amount of actual staking tokens from the vault
             let withdraw_tokens = self.stake_vault_actual.take(tokens.amount());
-            info!("Withdrawn actual tokens: {:?}", withdraw_tokens);
+            info!(
+                "Withdrawn actual tokens: {:?}",
+                withdraw_tokens.amount().clone()
+            );
 
             // Burn the synthetic staking tokens
             info!("Burned synthetic tokens: {:?}", tokens.amount().clone());
@@ -635,15 +653,18 @@ mod stake {
             let take_pool_units = self
                 .stake_vault_lp_token
                 .take(nft_claim_receipt_data.pool_units);
-            info!("Pool units: {:?}", take_pool_units);
+            info!("Pool units: {:?}", take_pool_units.amount().clone());
 
             // Redeem the pool units in return for the synthetic staking tokens
             let tokens = self.stake_pool_synth.redeem(take_pool_units);
-            info!("Redeemed synthetic tokens: {:?}", tokens);
+            info!("Redeemed synthetic tokens: {:?}", tokens.amount().clone());
 
             // Withdraw the same amount of actual staking tokens from the vault
             let withdraw_tokens = self.stake_vault_actual.take(tokens.amount());
-            info!("Withdrawn actual tokens: {:?}", withdraw_tokens);
+            info!(
+                "Withdrawn actual tokens: {:?}",
+                withdraw_tokens.amount().clone()
+            );
 
             // Burn the synthetic staking tokens
             info!("Burned synthetic tokens: {:?}", tokens.amount().clone());
@@ -683,7 +704,10 @@ mod stake {
 
             // Withdraw the actual tokens from the vault; ignoring the unstake period and resource pool
             let withdraw_tokens = self.stake_vault_actual.take(redemption_value.clone());
-            info!("Withdrawn actual tokens: {:?}", withdraw_tokens);
+            info!(
+                "Withdrawn actual tokens: {:?}",
+                withdraw_tokens.amount().clone()
+            );
 
             // Burn the pool units
             info!("Burned pool units: {:?}", pool_units.amount().clone());
@@ -729,7 +753,10 @@ mod stake {
 
             // Withdraw the actual tokens from the vault; ignoring the unstake period and resource pool
             let withdraw_tokens = self.stake_vault_actual.take(redemption_value.clone());
-            info!("Withdrawn actual tokens: {:?}", withdraw_tokens);
+            info!(
+                "Withdrawn actual tokens: {:?}",
+                withdraw_tokens.amount().clone()
+            );
 
             // Burn the NFT receipt
             self.nft_claim_receipt_resource_manager
