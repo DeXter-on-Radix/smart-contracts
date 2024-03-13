@@ -1,0 +1,21 @@
+## Lock fee
+CALL_METHOD
+    Address("${account}")
+    "lock_fee"
+    Decimal("${amount}");
+# Create proof from nft claim receipt
+CALL_METHOD
+    Address("${account}")
+    "create_proof_of_non_fungibles"
+    Address("${resource}")
+    Array<NonFungibleLocalId>(NonFungibleLocalId("${non_fungible_local_id}"));
+## Take proof from auth zone for method call    
+POP_FROM_AUTH_ZONE
+    Proof("${proof_name}");
+## Deposit proof into method
+CALL_METHOD
+    Address("${component}")
+    "check_unstake_status"
+    Proof("${proof_name}"); 
+## Drop all proofs
+DROP_ALL_PROOFS;

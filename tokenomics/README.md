@@ -18,7 +18,7 @@ resim run manifest/${manifest_name}.rtm
 
 ## Contributing
 
-We welcome contributions to this project. Please read our [contributing guidelines](../stake-contractV2/CONTRIBUTING.md) before submitting a pull request.
+We welcome contributions to this project. Please read our [contributing guidelines](../stake-contractV3/CONTRIBUTING.md) before submitting a pull request.
 
 ## Disclaimer
 
@@ -26,4 +26,4 @@ This code is provided "as-is" for educational and community engagement purposes.
 
 The creators and contributors of this project expressly disclaim any liability for misuse or damages that may arise from the use of this code. Please be aware that the code may be incomplete and is subject to future modifications, particularly when intended for use in production environments or in high-risk applications.
 
-For more information about your rights and obligations when using or contributing to this project, please refer to the Apache 2.0 license located [here](../stake-contractV2/LICENSE).
+For more information about your rights and obligations when using or contributing to this project, please refer to the Apache 2.0 license located [here](../stake-contractV3/LICENSE).

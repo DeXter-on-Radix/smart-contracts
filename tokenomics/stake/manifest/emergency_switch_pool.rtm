@@ -12,6 +12,6 @@ CALL_METHOD
 ## Call method
 CALL_METHOD
     Address("${component}")
-    "emergency_switch";
+    "emergency_switch_pool";
 ## Drop all proofs
 DROP_ALL_PROOFS;
