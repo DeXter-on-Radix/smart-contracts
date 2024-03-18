@@ -23,26 +23,34 @@ pub struct NFTClaimReceiptData {
 mod stake {
 
     enable_method_auth! {
+        roles {
+            super_admin => updatable_by: [OWNER];
+            admin => updatable_by: [OWNER];
+
+        },
         methods {
             stake => PUBLIC;
             unstake => PUBLIC;
             withdraw_stake => PUBLIC;
             show_redemption_value => PUBLIC;
             show_vault_amount => PUBLIC;
+            get_state => PUBLIC;
             check_unstake_status => PUBLIC;
-            deposit => restrict_to: [OWNER];
-            update_unstake_period => restrict_to: [OWNER];
-            emergency_switch_contract => restrict_to: [OWNER];
-            emergency_switch_pool => restrict_to: [OWNER];
-            emergency_withdraw_with_pool_units => PUBLIC;
-            emergency_withdraw_with_nft_claim_receipt => PUBLIC;
-            emergency_withdraw_pool_bypass_with_pool_units => PUBLIC;
-            emergency_withdraw_pool_bypass_with_nft_claim_receipt => PUBLIC;
+            deposit => restrict_to: [OWNER, super_admin, admin];
+            update_unstake_period => restrict_to: [OWNER, super_admin];
+            update_dapp_definition_account => restrict_to: [OWNER];
+            update_owner_badge => restrict_to: [OWNER];
+            update_super_admin_badge => restrict_to: [OWNER];
+            update_admin_badge => restrict_to: [OWNER];
+            emergency_switch => restrict_to: [OWNER];
         }
     }
     #[derive(Debug)]
     // Define what resources and data will be managed by the Stake component
     struct Stake {
+        // Native account blueprint
+        dapp_definition_account: Global<Account>,
+        dapp_definition_address: GlobalAddress,
         // Component staking
         stake_vault_actual: FungibleVault,
         stake_token_actual: ResourceAddress,
@@ -51,20 +59,16 @@ mod stake {
         unstake_period: u64,
         // Component staking nft claim receipt
         nft_claim_receipt_resource_manager: ResourceManager,
-        // Native account blueprint
-        dapp_definition_account: Global<Account>,
-        dapp_definition_address: GlobalAddress,
         // Native OneResourcePool blueprint
         stake_pool_synth: Global<OneResourcePool>,
         stake_pool_synth_token_manager: ResourceManager,
-        stake_pool_synth_name: String,
-        stake_pool_synth_token_symbol: String,
-        stake_pool_synth_description: String,
         stake_pool_lp_token_manager: ResourceManager,
-        stake_pool_lp_token_name: String,
-        stake_pool_lp_token_symbol: String,
         // Owner badge
         owner_badge: ResourceAddress,
+        // Super admin badge
+        super_admin_badge_resource_address: ResourceAddress,
+        // Admin badge
+        admin_badge_resource_address: ResourceAddress,
         // Contract status
         contract_status: Status,
         // Pool status
@@ -73,14 +77,25 @@ mod stake {
 
     impl Stake {
         pub fn instantiate_stake(
+            contract_name: String,
+            contract_description: String,
+            contract_tags: Vec<String>,
+            dapp_definition_account_name: String,
+            dapp_definition_account_description: String,
+            dapp_definition_account_icon_url: String,
             stake_token_actual: ResourceAddress,
             unstake_period: u64,
+            nft_claim_receipt_name: String,
+            nft_claim_receipt_symbol: String,
+            nft_claim_receipt_description: String,
             stake_pool_synth_name: String,
             stake_pool_synth_token_symbol: String,
             stake_pool_synth_description: String,
             stake_pool_lp_token_name: String,
             stake_pool_lp_token_symbol: String,
             owner_badge: Bucket,
+            super_admin_badge_resource_address: ResourceAddress,
+            admin_badge_resource_address: ResourceAddress,
         ) -> (Global<Stake>, Bucket) {
             // Set up actor virtual badge
             let (address_reservation, component_address) =
@@ -104,10 +119,10 @@ mod stake {
                 metadata_locker_updater => rule!(require(owner_badge.resource_address().clone()));
                  },
                  init {
-                     "name" => "Stake Claim Receipt".to_string(), updatable;
-                     "symbol" => "SCR".to_string(), updatable;
-                     "description" => "Stake Claim Receipt".to_string(), updatable;
-                 }
+                    "name" => nft_claim_receipt_name.to_string(), updatable;
+                    "symbol" => nft_claim_receipt_symbol.to_string(), updatable;
+                    "description" => nft_claim_receipt_description.to_string(), updatable;
+                }
             })
             .mint_roles(mint_roles! {
                 minter => rule!(require(global_caller(component_address)));
@@ -206,10 +221,25 @@ mod stake {
             // Get the resource manager for the pool's lp token
             let stake_pool_lp_token_manager = ResourceManager::from(stake_pool_lp_token_address);
 
-            // Set the remaining permissions and metadata
+            // Set the remaining permissions and metadata for the dapp definition account
+            dapp_definition_account.set_metadata("account_type", String::from("dapp definition"));
+            dapp_definition_account.set_metadata("name", dapp_definition_account_name.to_string());
+            dapp_definition_account.set_metadata(
+                "description",
+                dapp_definition_account_description.to_string(),
+            );
+            dapp_definition_account.set_metadata(
+                "icon_url",
+                Url::of(dapp_definition_account_icon_url.to_string()),
+            );
+            dapp_definition_account.set_metadata(
+                "claimed_entities",
+                vec![GlobalAddress::from(component_address.clone())],
+            );
             dapp_definition_account
                 .set_owner_role(rule!(require(owner_badge.resource_address().clone())));
 
+            // Set the remaining permissions and metadata for the stake pool synth token manager and the stake pool lp token manager
             owner_badge.authorize_with_all(|| {
                 // Set the pool token name, symbol and dapp definition
                 stake_pool_lp_token_manager
@@ -232,27 +262,29 @@ mod stake {
             });
 
             let component = Self {
+                dapp_definition_account,
+                dapp_definition_address,
                 stake_vault_actual: FungibleVault::new(stake_token_actual),
                 stake_token_actual,
                 stake_vault_lp_token: Vault::new(stake_pool_lp_token_manager.address()),
                 unstake_period,
                 nft_claim_receipt_resource_manager: nft_claim_receipt,
-                dapp_definition_account,
-                dapp_definition_address,
                 stake_pool_synth,
                 stake_pool_synth_token_manager,
-                stake_pool_synth_name,
-                stake_pool_synth_token_symbol,
-                stake_pool_synth_description,
                 stake_pool_lp_token_manager,
-                stake_pool_lp_token_name,
-                stake_pool_lp_token_symbol,
                 owner_badge: owner_badge.resource_address(),
+                super_admin_badge_resource_address,
+                admin_badge_resource_address,
                 contract_status: Status::On,
                 pool_status: Status::On,
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::Updatable(rule!(require(owner_badge.resource_address().clone()))))
+            .roles(roles!{
+                super_admin => rule!(require(super_admin_badge_resource_address.clone()));
+                admin => rule!(require(admin_badge_resource_address.clone()));
+            
+            })
             .with_address(address_reservation)
             .metadata(metadata! {
              roles {
@@ -262,8 +294,10 @@ mod stake {
                     metadata_locker_updater => rule!(require(owner_badge.resource_address().clone()));
                 },
                  init {
-                    "name" => "Staking Contract".to_string(), updatable;
-                   "description" => "A contract that allows users to stake tokens.".to_string(), updatable;
+                    "name" => contract_name.to_string().clone(), updatable;
+                   "description" => contract_description.to_string().clone(), updatable;
+                   "tags" => contract_tags.clone(), updatable;
+                   "dapp_definition" => dapp_definition_address, updatable;
                 }
              })
             .globalize();
@@ -276,6 +310,12 @@ mod stake {
             assert!(
                 self.contract_status == Status::On,
                 "Contract is not active."
+            );
+
+            // Check if the pool is active
+            assert!(
+                self.pool_status == Status::On,
+                "Pool is not active."
             );
 
             // Check if the stake amount is greater than zero
@@ -314,6 +354,12 @@ mod stake {
             assert!(
                 self.contract_status == Status::On,
                 "Contract is not active."
+            );
+
+             // Check if the pool is active
+             assert!(
+                self.pool_status == Status::On,
+                "Pool is not active."
             );
 
             // Check if amount is greater than zero
@@ -368,78 +414,339 @@ mod stake {
             return nft_claim_receipt;
         }
 
-        pub fn withdraw_stake(&mut self, nft_claim_receipt: NonFungibleBucket) -> FungibleBucket {
+        pub fn withdraw_stake(&mut self, pool_units: Option<Bucket>, nft_claim_receipt: Option<NonFungibleBucket>) -> FungibleBucket {   
+            // Define variable for claim nft
+            let nft_claim_receipt_option = match &nft_claim_receipt {
+                Some(ref nft_claim_receipt) => Some(nft_claim_receipt),
+                None => None,
+            };
+
+            // Define variable for pool units
+            // let pool_units_option = pool_units.unwrap().amount().clone();
+            let pool_units_option = match &pool_units {
+                Some(ref pool_units) => Some(pool_units),
+                None => None,
+            };
+            
+            match (&self.contract_status, &self.pool_status) {
+                (Status::On, Status::On) => {
+            // Check if both pool units and nft claim receipt are the correct values
+                    assert!(pool_units_option.is_none(), "Only the NFT claim receipt must be provided for regular withdrawal");
+                    assert!(nft_claim_receipt_option.is_some(), "NFT claim receipt must be provided for regular withdrawal");
+            // Regular withdrawal logic here
+            // Check if the contract is active
+            assert!(
+              self.contract_status == Status::On,
+              "Contract is not active."
+          );
+
+          // Check if the pool is active
+            assert!(
+                self.pool_status == Status::On,
+                "Pool is not active."
+            );
+
+          // Check the nft claim receipt
+          assert!(
+              nft_claim_receipt_option.unwrap().resource_address().clone()
+                  == self.nft_claim_receipt_resource_manager.address(),
+              "Invalid NFT claim receipt."
+          );
+          
+          // Check it is only 1 nft claim receipt
+          assert!(
+              nft_claim_receipt_option.unwrap().amount().clone() == Decimal::from(1),
+              "Only 1 NFT claim receipt is allowed."
+          );
+          
+          // Retrieve the NFT id and data
+          let nft_id: NonFungibleLocalId = nft_claim_receipt_option.unwrap().non_fungible_local_id().clone();
+          let nft_claim_receipt_data: NFTClaimReceiptData = self
+              .nft_claim_receipt_resource_manager
+              .get_non_fungible_data(&nft_id);
+          info!("NFT claim receipt data: {:?}", nft_claim_receipt_data);
+          
+          // Check if the unstake period has ended
+          assert!(
+              Runtime::current_epoch().number() >= nft_claim_receipt_data.unstake_period_end,
+              "Unstake period has not ended yet."
+          );
+          
+          // Check if the unstake period is greater than zero
+          assert!(
+              nft_claim_receipt_data.unstake_period_end > 0,
+              "Unstake period must be greater than zero."
+          );
+          
+          // Retrieve the amount of pool units written inside the NFT claim receipt from the component vault
+          let take_pool_units = self
+              .stake_vault_lp_token
+              .take(nft_claim_receipt_data.pool_units);
+          info!("Pool units: {:?}", take_pool_units.amount().clone());
+          
+          // Redeem the pool units in return for the synthetic staking tokens
+          let synth_tokens = self.stake_pool_synth.redeem(take_pool_units);
+          info!("Synthetic tokens: {:?}", synth_tokens.amount().clone());
+          
+          // Withdraw the same amount of actual staking tokens from the vault
+          let withdrawn_tokens = self.stake_vault_actual.take(synth_tokens.amount());
+          info!(
+              "Withdrawn actual tokens: {:?}",
+              withdrawn_tokens.amount().clone()
+          );
+          
+          // Burn the synthetic staking tokens
+          info!(
+              "Burned synthetic tokens: {:?}",
+              synth_tokens.amount().clone()
+          );
+          self.stake_pool_synth_token_manager.burn(synth_tokens);
+          
+          // Burn the NFT claim receipt
+          self.nft_claim_receipt_resource_manager
+              .burn(nft_claim_receipt.unwrap());
+          
+          // Return the actual tokens to the user
+          return withdrawn_tokens;
+                }
+                (Status::Off, Status::On) => {
+                    match (pool_units_option, nft_claim_receipt_option) {
+                        (None, Some(_)) => {
+            // First scenario logic here
+            // Check if the contract is in emergency mode
+            assert!(
+              self.contract_status == Status::Off,
+              "Contract is active, cannot withdraw in 'On' mode."
+          );
+
+            // Check if the pool is active
+            assert!(
+                self.pool_status == Status::On,
+                "Pool is not active."
+            );
+
+          // Check the nft claim receipt
+          assert!(
+              nft_claim_receipt_option.unwrap().resource_address().clone()
+                  == self.nft_claim_receipt_resource_manager.address(),
+              "Invalid NFT claim receipt."
+          );
+          
+          // Check it is only 1 nft claim receipt
+          assert!(
+              nft_claim_receipt_option.unwrap().amount().clone() == Decimal::from(1),
+              "Only 1 NFT claim receipt is allowed."
+          );
+          
+          // Retrieve the NFT id and data
+          let nft_id: NonFungibleLocalId = nft_claim_receipt_option.unwrap().non_fungible_local_id().clone();
+          let nft_claim_receipt_data: NFTClaimReceiptData = self
+              .nft_claim_receipt_resource_manager
+              .get_non_fungible_data(&nft_id);
+          info!("NFT claim receipt data: {:?}", nft_claim_receipt_data);
+          
+          // Withdraw the actual tokens from the vault; ignoring the unstake period only
+          
+          // Take the pool units from the component vault and redeem them for the user
+          let take_pool_units = self
+              .stake_vault_lp_token
+              .take(nft_claim_receipt_data.pool_units);
+          info!("Pool units: {:?}", take_pool_units.amount().clone());
+          
+          // Redeem the pool units in return for the synthetic staking tokens
+          let tokens = self.stake_pool_synth.redeem(take_pool_units);
+          info!("Redeemed synthetic tokens: {:?}", tokens.amount().clone());
+          
+          // Withdraw the same amount of actual staking tokens from the vault
+          let withdraw_tokens = self.stake_vault_actual.take(tokens.amount());
+          info!(
+              "Withdrawn actual tokens: {:?}",
+              withdraw_tokens.amount().clone()
+          );
+          
+          // Burn the synthetic staking tokens
+          info!("Burned synthetic tokens: {:?}", tokens.amount().clone());
+          self.stake_pool_synth_token_manager.burn(tokens);
+          
+          // Burn the NFT claim receipt
+          self.nft_claim_receipt_resource_manager
+              .burn(nft_claim_receipt.unwrap());
+          
+          // Return the withdrawn tokens
+          return withdraw_tokens;
+                        }
+                        (Some(_), None) => {
+            // Second scenario logic here
+            // Check if the contract is in emergency mode
+            assert!(
+              self.contract_status == Status::Off,
+              "Contract is active, cannot withdraw in 'On' mode."
+          );
+
+            // Check if the pool is active
+            assert!(
+                self.pool_status == Status::On,
+                "Pool is not active."
+            );
+          
+          // Check if amount is greater than zero
+          assert!(
+              pool_units_option.unwrap().amount().clone() > Decimal::from(0),
+              "Withdraw amount must be greater than zero."
+          );
+          
+          // Check if the staking token matches
+          assert!(
+              pool_units_option.unwrap().resource_address().clone() == self.stake_pool_lp_token_manager.address(),
+              "Invalid pool units."
+          );
+          
+          // Withdraw the actual tokens from the vault; ignoring the unstake period only
+          
+          // Redeem the pool units in return for the synthetic staking tokens
+          let tokens = self.stake_pool_synth.redeem(pool_units.unwrap());
+          info!("Redeemed synthetic tokens: {:?}", tokens.amount().clone());
+          
+          // Withdraw the same amount of actual staking tokens from the vault
+          let withdraw_tokens = self.stake_vault_actual.take(tokens.amount());
+          info!(
+              "Withdrawn actual tokens: {:?}",
+              withdraw_tokens.amount().clone()
+          );
+          
+          // Burn the synthetic staking tokens
+          info!("Burned synthetic tokens: {:?}", tokens.amount().clone());
+          self.stake_pool_synth_token_manager.burn(tokens);
+          
+          // Return the withdrawn tokens
+          return withdraw_tokens;
+                        }
+                        _ => panic!("Invalid input for emergency withdrawal"),
+                    }
+                }
+                (Status::Off, Status::Off) => {
+                  match (pool_units_option, nft_claim_receipt_option) {
+                    (None, Some(_)) => {
+            // First scenario logic here
+            // Check if the contract is in emergency mode
+            assert!(
+              self.contract_status == Status::Off,
+              "Contract is active, cannot withdraw in 'On' mode."
+          );
+          
+          // Check if the pool is in emergency mode
+          assert!(
+              self.pool_status == Status::Off,
+              "Pool is active, cannot withdraw in 'On' mode."
+          );
+          
+          // Check the nft claim receipt
+          assert!(
+              nft_claim_receipt_option.unwrap().resource_address().clone()
+                  == self.nft_claim_receipt_resource_manager.address(),
+              "Invalid NFT claim receipt."
+          );
+          
+          // Check it is only 1 nft claim receipt
+          assert!(
+              nft_claim_receipt_option.unwrap().amount().clone() == Decimal::from(1),
+              "Only 1 NFT claim receipt is allowed."
+          );
+          
+          // Retrieve the NFT ID and data
+          let nft_id: NonFungibleLocalId = nft_claim_receipt_option.unwrap().non_fungible_local_id().clone();
+          let nft_claim_receipt_data: NFTClaimReceiptData = self
+              .nft_claim_receipt_resource_manager
+              .get_non_fungible_data(&nft_id);
+          info!("NFT claim receipt data: {:?}", nft_claim_receipt_data);
+          
+          // Define the redemption value
+          let redemption_value = nft_claim_receipt_data.pending_unstake_amount;
+          info!("Redemption value: {:?}", redemption_value);
+          
+          // Withdraw the actual tokens from the vault; ignoring the unstake period and resource pool
+          let withdraw_tokens = self.stake_vault_actual.take(redemption_value.clone());
+          info!(
+              "Withdrawn actual tokens: {:?}",
+              withdraw_tokens.amount().clone()
+          );
+          
+          // Burn the nft claim receipt
+          self.nft_claim_receipt_resource_manager
+              .burn(nft_claim_receipt.unwrap());
+          info!("Burned NFT claim receipt: {:?}", nft_claim_receipt_data);
+          
+          // Return the withdrawn tokens
+          return withdraw_tokens;
+                    }
+                    (Some(_), None) => {
+            // Second scenario logic here
+            // Check if the contract is in emergency mode
+            assert!(
+              self.contract_status == Status::Off,
+              "Contract is active, cannot withdraw in 'On' mode."
+          );
+          
+          // Check if the pool is in emergency mode
+          assert!(
+              self.pool_status == Status::Off,
+              "Pool is active, cannot withdraw in 'On' mode."
+          );
+          
+          // Check if amount is greater than zero
+          assert!(
+              pool_units_option.unwrap().amount().clone() > Decimal::from(0),
+              "Withdraw amount must be greater than zero."
+          );
+          
+          // Check if the staking token matches
+          assert!(
+              pool_units_option.unwrap().resource_address().clone() == self.stake_pool_lp_token_manager.address(),
+              "Invalid pool units."
+          );
+          
+          // Define the redemption value
+          let redemption_value = self
+              .stake_pool_synth
+              .get_redemption_value(pool_units_option.unwrap().amount().clone());
+          info!("Redemption value: {:?}", redemption_value);
+          
+          // Withdraw the actual tokens from the vault; ignoring the unstake period and resource pool
+          let withdraw_tokens = self.stake_vault_actual.take(redemption_value.clone());
+          info!(
+              "Withdrawn actual tokens: {:?}",
+              withdraw_tokens.amount().clone()
+          );
+          
+          // Burn the pool units
+          info!("Burned pool units: {:?}", pool_units_option.unwrap().amount().clone());
+          self.stake_vault_lp_token.put(pool_units.unwrap());
+          
+          // Return the withdrawn tokens
+          return withdraw_tokens;
+                    }
+                    _ => panic!("Invalid input for emergency withdrawal"),
+                }
+                }
+                (Status::On, Status::Off) => {
+                    panic!("Invalid state combination for contract and pool");
+                }
+            }
+        }
+
+        pub fn show_redemption_value(&mut self, pool_units: Decimal) {
             // Check if the contract is active
             assert!(
                 self.contract_status == Status::On,
                 "Contract is not active."
             );
 
-            // Check the nft claim receipt
-            assert!(
-                nft_claim_receipt.resource_address()
-                    == self.nft_claim_receipt_resource_manager.address(),
-                "Invalid NFT claim receipt."
+             // Check if the pool is active
+             assert!(
+                self.pool_status == Status::On,
+                "Pool is not active."
             );
 
-            // Check it is only 1 nft claim receipt
-            assert!(
-                nft_claim_receipt.amount() == Decimal::from(1),
-                "Only 1 NFT claim receipt is allowed."
-            );
-
-            // Retrieve the NFT id and data
-            let nft_id: NonFungibleLocalId = nft_claim_receipt.non_fungible_local_id();
-            let nft_claim_receipt_data: NFTClaimReceiptData = self
-                .nft_claim_receipt_resource_manager
-                .get_non_fungible_data(&nft_id);
-            info!("NFT claim receipt data: {:?}", nft_claim_receipt_data);
-
-            // Check if the unstake period has ended
-            assert!(
-                Runtime::current_epoch().number() >= nft_claim_receipt_data.unstake_period_end,
-                "Unstake period has not ended yet."
-            );
-
-            // Check if the unstake period is greater than zero
-            assert!(
-                nft_claim_receipt_data.unstake_period_end > 0,
-                "Unstake period must be greater than zero."
-            );
-
-            // Retrieve the amount of pool units written inside the NFT claim receipt from the component vault
-            let take_pool_units = self
-                .stake_vault_lp_token
-                .take(nft_claim_receipt_data.pool_units);
-            info!("Pool units: {:?}", take_pool_units.amount().clone());
-
-            // Redeem the pool units in return for the synthetic staking tokens
-            let synth_tokens = self.stake_pool_synth.redeem(take_pool_units);
-            info!("Synthetic tokens: {:?}", synth_tokens.amount().clone());
-
-            // Withdraw the same amount of actual staking tokens from the vault
-            let withdrawn_tokens = self.stake_vault_actual.take(synth_tokens.amount());
-            info!(
-                "Withdrawn actual tokens: {:?}",
-                withdrawn_tokens.amount().clone()
-            );
-
-            // Burn the synthetic staking tokens
-            info!(
-                "Burned synthetic tokens: {:?}",
-                synth_tokens.amount().clone()
-            );
-            self.stake_pool_synth_token_manager.burn(synth_tokens);
-
-            // Burn the NFT claim receipt
-            self.nft_claim_receipt_resource_manager
-                .burn(nft_claim_receipt);
-
-            // Return the actual tokens to the user
-            return withdrawn_tokens;
-        }
-
-        pub fn show_redemption_value(&mut self, pool_units: Decimal) {
             // Check if amount is greater than zero
             assert!(
                 pool_units > Decimal::from(0),
@@ -455,6 +762,18 @@ mod stake {
         }
 
         pub fn show_vault_amount(&mut self) {
+            // Check if the contract is active
+            assert!(
+                self.contract_status == Status::On,
+                "Contract is not active."
+            );
+
+             // Check if the pool is active
+             assert!(
+                self.pool_status == Status::On,
+                "Pool is not active."
+            );
+
             // Get the amount of tokens in the vault
             info!(
                 "There are currently {:?} tokens in the vault.",
@@ -462,7 +781,50 @@ mod stake {
             );
         }
 
+        pub fn get_state(&self) {
+        // Get the state of the contract
+        // Native account blueprint
+        info!("Dapp definition account: {:?}", self.dapp_definition_account);
+        info!("Dapp definition account address: {:?}", self.dapp_definition_address);
+        // Component staking
+        info!("Actual token vault: {:?}", self.stake_vault_actual);
+        info!("Stake token: {:?}", self.stake_token_actual);
+        info!("Pool token vault: {:?}", self.stake_vault_lp_token);
+        // Define the unstake period in epochs
+        info!("Unstake period: {:?}", self.unstake_period);
+        // Component staking nft claim receipt
+        info!("NFT claim receipt: {:?}", self.nft_claim_receipt_resource_manager);
+        // Native OneResourcePool blueprint
+        info!("Synthetic token pool: {:?}", self.stake_pool_synth);
+        info!("Synthetic token manager: {:?}", self.stake_pool_synth_token_manager);
+        info!("Pool token manager: {:?}", self.stake_pool_lp_token_manager);
+
+        // Owner badge
+        info!("Owner badge: {:?}", self.owner_badge);
+        // Super admin badge
+        info!("Super admin badge: {:?}", self.super_admin_badge_resource_address);
+        // Admin badge
+        info!("Admin badge: {:?}", self.admin_badge_resource_address);
+        // Contract status
+        info!("Contract status: {:?}", self.contract_status);
+        // Pool status
+        info!("Pool status: {:?}", self.pool_status);
+            
+        }
+
         pub fn check_unstake_status(&self, nft_claim_receipt_proof: NonFungibleProof) {
+            // Check if the contract is active
+            assert!(
+                self.contract_status == Status::On,
+                "Contract is not active."
+            );
+
+             // Check if the pool is active
+             assert!(
+                self.pool_status == Status::On,
+                "Pool is not active."
+            );
+
             // Check if the receipt is valid
             assert!(
                 nft_claim_receipt_proof.resource_address()
@@ -522,6 +884,12 @@ mod stake {
                 "Contract is not active."
             );
 
+             // Check if the pool is active
+             assert!(
+                self.pool_status == Status::On,
+                "Pool is not active."
+            );
+
             // Check if the stake amount is greater than zero
             assert!(
                 stake_tokens_actual.amount() > Decimal::from(0),
@@ -561,6 +929,12 @@ mod stake {
             // Check if the contract is active
             assert!(self.contract_status == Status::On, "Contract is not active");
 
+             // Check if the pool is active
+             assert!(
+                self.pool_status == Status::On,
+                "Pool is not active."
+            );
+
             // Check if the new unstake period is greater than zero
             assert!(
                 new_unstake_period > 0,
@@ -581,231 +955,121 @@ mod stake {
             );
         }
 
-        pub fn emergency_switch_contract(&mut self) {
+        pub fn update_dapp_definition_account(&mut self, new_dapp_definition_account: Global<Account>) {
+            // Check if the contract is active
+            assert!(
+                self.contract_status == Status::On,
+                "Contract is not active."
+            );
+
+             // Check if the pool is active
+             assert!(
+                self.pool_status == Status::On,
+                "Pool is not active."
+            );
+
+            // Check if the new dapp definition account is different from the old dapp definition account
+            assert!(
+                new_dapp_definition_account.address() != self.dapp_definition_account.address(),
+                "Dapp definition account cannot be the same as the old dapp definition account."
+            );
+
+            // Update the dapp definition account and address
+            self.dapp_definition_account = new_dapp_definition_account;
+            self.dapp_definition_address = GlobalAddress::from(new_dapp_definition_account.address());
+            info!("Dapp definition account has been updated.");
+        }
+
+        pub fn update_owner_badge(&mut self, new_owner_badge: ResourceAddress) {
+            // Check if the contract is active
+            assert!(
+                self.contract_status == Status::On,
+                "Contract is not active."
+            );
+
+             // Check if the pool is active
+             assert!(
+                self.pool_status == Status::On,
+                "Pool is not active."
+            );
+
+            // Check if the new owner badge is different from the old owner badge
+            assert!(new_owner_badge != self.owner_badge, "Owner badge cannot be the same as the old owner badge.");
+
+            // Update the owner badge
+            self.owner_badge = new_owner_badge;
+            info!("Owner badge has been updated.");
+        }
+
+        pub fn update_super_admin_badge(&mut self, new_super_admin_badge: ResourceAddress) {
+            // Check if the contract is active
+            assert!(
+                self.contract_status == Status::On,
+                "Contract is not active."
+            );
+
+             // Check if the pool is active
+             assert!(
+                self.pool_status == Status::On,
+                "Pool is not active."
+            );
+
+            // Check if the new super admin badge is different from the old super admin badge
+            assert!(new_super_admin_badge != self.admin_badge_resource_address, "Super admin badge cannot be the same as the admin badge.");
+
+            // Update the super admin badge
+            self.super_admin_badge_resource_address = new_super_admin_badge;
+            info!("Super admin badge has been updated.");
+        }
+
+        pub fn update_admin_badge(&mut self, new_admin_badge: ResourceAddress) {
+            // Check if the contract is active
+            assert!(
+                self.contract_status == Status::On,
+                "Contract is not active."
+            );
+
+             // Check if the pool is active
+             assert!(
+                self.pool_status == Status::On,
+                "Pool is not active."
+            );
+
+            // Check if the new admin badge is different from the old admin badge
+            assert!(new_admin_badge != self.super_admin_badge_resource_address, "Admin badge cannot be the same as the super admin badge.");
+
+            // Update the admin badge
+            self.admin_badge_resource_address = new_admin_badge;
+            info!("Admin badge has been updated.");
+        }
+
+        pub fn emergency_switch(&mut self, toggle_contract: bool, toggle_pool: bool) {
             // Toggle the contract status
-            match self.contract_status {
-                Status::On => self.contract_status = Status::Off,
-                Status::Off => self.contract_status = Status::On,
+            match toggle_contract {
+                true => {
+                    match self.contract_status {
+                        Status::On => self.contract_status = Status::Off,
+                        Status::Off => self.contract_status = Status::On,
+                    }
+                    info!(
+                        "Contract status has been switched to {:?}.",
+                        self.contract_status
+                    );
+                },
+                false => (),
             }
-            info!(
-                "Contract status has been switched to {:?}.",
-                self.contract_status
-            );
-        }
-
-        pub fn emergency_switch_pool(&mut self) {
+        
             // Toggle the pool status
-            match self.pool_status {
-                Status::On => self.pool_status = Status::Off,
-                Status::Off => self.pool_status = Status::On,
+            match toggle_pool {
+                true => {
+                    match self.pool_status {
+                        Status::On => self.pool_status = Status::Off,
+                        Status::Off => self.pool_status = Status::On,
+                    }
+                    info!("Pool status has been switched to {:?}.", self.pool_status);
+                },
+                false => (),
             }
-            info!("Pool status has been switched to {:?}.", self.pool_status);
         }
-
-        pub fn emergency_withdraw_with_pool_units(&mut self, pool_units: Bucket) -> FungibleBucket {
-            // Check if the contract is in emergency mode
-            assert!(
-                self.contract_status == Status::Off,
-                "Contract is active, cannot withdraw in 'On' mode."
-            );
-
-            // Check if amount is greater than zero
-            assert!(
-                pool_units.amount() > Decimal::from(0),
-                "Withdraw amount must be greater than zero."
-            );
-
-            // Check if the staking token matches
-            assert!(
-                pool_units.resource_address() == self.stake_pool_lp_token_manager.address(),
-                "Invalid pool units."
-            );
-
-            // Withdraw the actual tokens from the vault; ignoring the unstake period only
-
-            // Redeem the pool units in return for the synthetic staking tokens
-            let tokens = self.stake_pool_synth.redeem(pool_units);
-            info!("Redeemed synthetic tokens: {:?}", tokens.amount().clone());
-
-            // Withdraw the same amount of actual staking tokens from the vault
-            let withdraw_tokens = self.stake_vault_actual.take(tokens.amount());
-            info!(
-                "Withdrawn actual tokens: {:?}",
-                withdraw_tokens.amount().clone()
-            );
-
-            // Burn the synthetic staking tokens
-            info!("Burned synthetic tokens: {:?}", tokens.amount().clone());
-            self.stake_pool_synth_token_manager.burn(tokens);
-
-            // Return the withdrawn tokens
-            return withdraw_tokens;
-        }
-
-        pub fn emergency_withdraw_with_nft_claim_receipt(
-            &mut self,
-            nft_claim_receipt: NonFungibleBucket,
-        ) -> FungibleBucket {
-            // Check if the contract is in emergency mode
-            assert!(
-                self.contract_status == Status::Off,
-                "Contract is active, cannot withdraw in 'On' mode."
-            );
-
-            // Check the nft claim receipt
-            assert!(
-                nft_claim_receipt.resource_address()
-                    == self.nft_claim_receipt_resource_manager.address(),
-                "Invalid NFT claim receipt."
-            );
-
-            // Check it is only 1 nft claim receipt
-            assert!(
-                nft_claim_receipt.amount() == Decimal::from(1),
-                "Only 1 NFT claim receipt is allowed."
-            );
-
-            // Retrieve the NFT id and data
-            let nft_id: NonFungibleLocalId = nft_claim_receipt.non_fungible_local_id();
-            let nft_claim_receipt_data: NFTClaimReceiptData = self
-                .nft_claim_receipt_resource_manager
-                .get_non_fungible_data(&nft_id);
-            info!("NFT claim receipt data: {:?}", nft_claim_receipt_data);
-
-            // Withdraw the actual tokens from the vault; ignoring the unstake period only
-
-            // Take the pool units from the component vault and redeem them for the user
-            let take_pool_units = self
-                .stake_vault_lp_token
-                .take(nft_claim_receipt_data.pool_units);
-            info!("Pool units: {:?}", take_pool_units.amount().clone());
-
-            // Redeem the pool units in return for the synthetic staking tokens
-            let tokens = self.stake_pool_synth.redeem(take_pool_units);
-            info!("Redeemed synthetic tokens: {:?}", tokens.amount().clone());
-
-            // Withdraw the same amount of actual staking tokens from the vault
-            let withdraw_tokens = self.stake_vault_actual.take(tokens.amount());
-            info!(
-                "Withdrawn actual tokens: {:?}",
-                withdraw_tokens.amount().clone()
-            );
-
-            // Burn the synthetic staking tokens
-            info!("Burned synthetic tokens: {:?}", tokens.amount().clone());
-            self.stake_pool_synth_token_manager.burn(tokens);
-
-            // Burn the NFT claim receipt
-            self.nft_claim_receipt_resource_manager
-                .burn(nft_claim_receipt);
-
-            // Return the withdrawn tokens
-            return withdraw_tokens;
-        }
-
-        pub fn emergency_withdraw_pool_bypass_with_pool_units(
-            &mut self,
-            pool_units: Bucket,
-        ) -> FungibleBucket {
-            // Check if the contract is in emergency mode
-            assert!(
-                self.contract_status == Status::Off,
-                "Contract is active, cannot withdraw in 'On' mode."
-            );
-
-            // Check if the pool is in emergency mode
-            assert!(
-                self.pool_status == Status::Off,
-                "Pool is active, cannot withdraw in 'On' mode."
-            );
-
-            // Check if amount is greater than zero
-            assert!(
-                pool_units.amount() > Decimal::from(0),
-                "Withdraw amount must be greater than zero."
-            );
-
-            // Check if the staking token matches
-            assert!(
-                pool_units.resource_address() == self.stake_pool_lp_token_manager.address(),
-                "Invalid pool units."
-            );
-
-            // Define the redemption value
-            let redemption_value = self
-                .stake_pool_synth
-                .get_redemption_value(pool_units.amount());
-            info!("Redemption value: {:?}", redemption_value);
-
-            // Withdraw the actual tokens from the vault; ignoring the unstake period and resource pool
-            let withdraw_tokens = self.stake_vault_actual.take(redemption_value.clone());
-            info!(
-                "Withdrawn actual tokens: {:?}",
-                withdraw_tokens.amount().clone()
-            );
-
-            // Burn the pool units
-            info!("Burned pool units: {:?}", pool_units.amount().clone());
-            self.stake_vault_lp_token.put(pool_units);
-
-            // Return the withdrawn tokens
-            return withdraw_tokens;
-        }
-
-        pub fn emergency_withdraw_pool_bypass_with_nft_claim_receipt(
-            &mut self,
-            nft_claim_receipt: NonFungibleBucket,
-        ) -> FungibleBucket {
-            // Check if the contract is in emergency mode
-            assert!(
-                self.contract_status == Status::Off,
-                "Contract is active, cannot withdraw in 'On' mode."
-            );
-
-            // Check if the pool is in emergency mode
-            assert!(
-                self.pool_status == Status::Off,
-                "Pool is active, cannot withdraw in 'On' mode."
-            );
-
-            // Check the nft claim receipt
-            assert!(
-                nft_claim_receipt.resource_address()
-                    == self.nft_claim_receipt_resource_manager.address(),
-                "Invalid NFT claim receipt."
-            );
-
-            // Check it is only 1 nft claim receipt
-            assert!(
-                nft_claim_receipt.amount() == Decimal::from(1),
-                "Only 1 NFT claim receipt is allowed."
-            );
-
-            // Retrieve the NFT ID and data
-            let nft_id: NonFungibleLocalId = nft_claim_receipt.non_fungible_local_id();
-            let nft_claim_receipt_data: NFTClaimReceiptData = self
-                .nft_claim_receipt_resource_manager
-                .get_non_fungible_data(&nft_id);
-            info!("NFT claim receipt data: {:?}", nft_claim_receipt_data);
-
-            // Define the redemption value
-            let redemption_value = nft_claim_receipt_data.pending_unstake_amount;
-            info!("Redemption value: {:?}", redemption_value);
-
-            // Withdraw the actual tokens from the vault; ignoring the unstake period and resource pool
-            let withdraw_tokens = self.stake_vault_actual.take(redemption_value.clone());
-            info!(
-                "Withdrawn actual tokens: {:?}",
-                withdraw_tokens.amount().clone()
-            );
-
-            // Burn the nft claim receipt
-            self.nft_claim_receipt_resource_manager
-                .burn(nft_claim_receipt);
-            info!("Burned NFT claim receipt: {:?}", nft_claim_receipt_data);
-
-            // Return the withdrawn tokens
-            return withdraw_tokens;
-        }
-    }
+}
 }
