@@ -1,0 +1,17 @@
+# Lock fee
+CALL_METHOD
+    Address("${account}")
+    "lock_fee"
+    Decimal("${amount}");
+
+# Get state
+CALL_METHOD
+    Address("${component}")
+    "get_state"
+
+# Return all tokens from worktop to account
+CALL_METHOD
+    Address("${account}")
+    "try_deposit_batch_or_refund"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>();

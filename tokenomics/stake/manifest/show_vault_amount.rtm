@@ -3,6 +3,7 @@ CALL_METHOD
     Address("${account}")
     "lock_fee"
     Decimal("${amount}");
+    
 # Show vault amount
 CALL_METHOD
     Address("${component}")

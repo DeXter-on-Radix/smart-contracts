@@ -1,17 +1,21 @@
-## Lock fee
+# Lock fee
 CALL_METHOD
     Address("${account}")
     "lock_fee"
     Decimal("${amount}");
+
 # Create proof from owner badge
 CALL_METHOD
     Address("${account}")
     "create_proof_of_non_fungibles"
     Address("${resource}")
     Array<NonFungibleLocalId>(NonFungibleLocalId("${#non_fungible_local_id#}"));
-## Call method
+
+# Call method
 CALL_METHOD
     Address("${component}")
-    "emergency_switch_pool";
-## Drop all proofs
+    "update_dapp_definition_account"
+    Address("${account}");
+    
+# Drop all proofs
 DROP_ALL_PROOFS;

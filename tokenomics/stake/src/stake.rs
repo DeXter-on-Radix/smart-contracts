@@ -34,8 +34,8 @@ mod stake {
             withdraw_stake => PUBLIC;
             show_redemption_value => PUBLIC;
             show_vault_amount => PUBLIC;
-            get_state => PUBLIC;
             check_unstake_status => PUBLIC;
+            get_state => restrict_to: [OWNER, super_admin, admin];
             deposit => restrict_to: [OWNER, super_admin, admin];
             update_unstake_period => restrict_to: [OWNER, super_admin];
             update_dapp_definition_account => restrict_to: [OWNER];
@@ -781,37 +781,6 @@ mod stake {
             );
         }
 
-        pub fn get_state(&self) {
-        // Get the state of the contract
-        // Native account blueprint
-        info!("Dapp definition account: {:?}", self.dapp_definition_account);
-        info!("Dapp definition account address: {:?}", self.dapp_definition_address);
-        // Component staking
-        info!("Actual token vault: {:?}", self.stake_vault_actual);
-        info!("Stake token: {:?}", self.stake_token_actual);
-        info!("Pool token vault: {:?}", self.stake_vault_lp_token);
-        // Define the unstake period in epochs
-        info!("Unstake period: {:?}", self.unstake_period);
-        // Component staking nft claim receipt
-        info!("NFT claim receipt: {:?}", self.nft_claim_receipt_resource_manager);
-        // Native OneResourcePool blueprint
-        info!("Synthetic token pool: {:?}", self.stake_pool_synth);
-        info!("Synthetic token manager: {:?}", self.stake_pool_synth_token_manager);
-        info!("Pool token manager: {:?}", self.stake_pool_lp_token_manager);
-
-        // Owner badge
-        info!("Owner badge: {:?}", self.owner_badge);
-        // Super admin badge
-        info!("Super admin badge: {:?}", self.super_admin_badge_resource_address);
-        // Admin badge
-        info!("Admin badge: {:?}", self.admin_badge_resource_address);
-        // Contract status
-        info!("Contract status: {:?}", self.contract_status);
-        // Pool status
-        info!("Pool status: {:?}", self.pool_status);
-            
-        }
-
         pub fn check_unstake_status(&self, nft_claim_receipt_proof: NonFungibleProof) {
             // Check if the contract is active
             assert!(
@@ -876,6 +845,37 @@ mod stake {
                 info!("You can now withdraw your stake.");
             }
         }
+
+        pub fn get_state(&self) {
+            // Get the state of the contract
+            // Native account blueprint
+            info!("Dapp definition account: {:?}", self.dapp_definition_account);
+            info!("Dapp definition account address: {:?}", self.dapp_definition_address);
+            // Component staking
+            info!("Actual token vault: {:?}", self.stake_vault_actual);
+            info!("Stake token: {:?}", self.stake_token_actual);
+            info!("Pool token vault: {:?}", self.stake_vault_lp_token);
+            // Define the unstake period in epochs
+            info!("Unstake period: {:?}", self.unstake_period);
+            // Component staking nft claim receipt
+            info!("NFT claim receipt: {:?}", self.nft_claim_receipt_resource_manager);
+            // Native OneResourcePool blueprint
+            info!("Synthetic token pool: {:?}", self.stake_pool_synth);
+            info!("Synthetic token manager: {:?}", self.stake_pool_synth_token_manager);
+            info!("Pool token manager: {:?}", self.stake_pool_lp_token_manager);
+    
+            // Owner badge
+            info!("Owner badge: {:?}", self.owner_badge);
+            // Super admin badge
+            info!("Super admin badge: {:?}", self.super_admin_badge_resource_address);
+            // Admin badge
+            info!("Admin badge: {:?}", self.admin_badge_resource_address);
+            // Contract status
+            info!("Contract status: {:?}", self.contract_status);
+            // Pool status
+            info!("Pool status: {:?}", self.pool_status);
+                
+            }
 
         pub fn deposit(&mut self, stake_tokens_actual: FungibleBucket) {
             // Check if the contract is active

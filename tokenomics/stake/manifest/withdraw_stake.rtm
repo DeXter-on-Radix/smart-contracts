@@ -1,25 +1,29 @@
-## Lock fee
+# Lock fee
 CALL_METHOD
     Address("${account}")
     "lock_fee"
     Decimal("${amount}");
-## Withdraw nft claim receipt
+
+# Withdraw nft claim receipt
 CALL_METHOD
     Address("${account}")
     "withdraw"
     Address("${resource}")
     Decimal("${amount}");
-## Withdraw nft claim receipt from worktop and put them into bucket
+
+# Withdraw nft claim receipt from worktop and put them into bucket
 TAKE_ALL_FROM_WORKTOP
     Address("${resource}")
     Bucket("${bucket_name}");
-## Deposit nft claim receipt into method
+
+# Deposit nft claim receipt into method
 CALL_METHOD
     Address("${component}")
     "withdraw_stake"
     Bucket("${bucket_name}");
-## Return all tokens from worktop to account
+    
+# Return all tokens from worktop to account
 CALL_METHOD
     Address("${account}")
-    "deposit_batch"
+    "try_deposit_batch_or_refund"
     Expression("ENTIRE_WORKTOP");
