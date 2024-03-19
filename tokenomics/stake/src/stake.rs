@@ -35,7 +35,7 @@ mod stake {
             show_redemption_value => PUBLIC;
             show_vault_amount => PUBLIC;
             check_unstake_status => PUBLIC;
-            get_state => restrict_to: [OWNER, super_admin, admin];
+            get_state => PUBLIC;
             deposit => restrict_to: [OWNER, super_admin, admin];
             update_unstake_period => restrict_to: [OWNER, super_admin];
             update_dapp_definition_account => restrict_to: [OWNER];
@@ -49,30 +49,30 @@ mod stake {
     // Define what resources and data will be managed by the Stake component
     struct Stake {
         // Native account blueprint
-        dapp_definition_account: Global<Account>,
-        dapp_definition_address: GlobalAddress,
+        pub dapp_definition_account: Global<Account>,
+        pub dapp_definition_address: GlobalAddress,
         // Component staking
-        stake_vault_actual: FungibleVault,
-        stake_token_actual: ResourceAddress,
-        stake_vault_lp_token: Vault,
+        pub stake_vault_actual: FungibleVault,
+        pub stake_token_actual: ResourceAddress,
+        pub stake_vault_lp_token: Vault,
         // Define the unstake period in epochs
-        unstake_period: u64,
+        pub unstake_period: u64,
         // Component staking nft claim receipt
-        nft_claim_receipt_resource_manager: ResourceManager,
+        pub nft_claim_receipt_resource_manager: ResourceManager,
         // Native OneResourcePool blueprint
-        stake_pool_synth: Global<OneResourcePool>,
-        stake_pool_synth_token_manager: ResourceManager,
-        stake_pool_lp_token_manager: ResourceManager,
+        pub stake_pool_synth: Global<OneResourcePool>,
+        pub stake_pool_synth_token_manager: ResourceManager,
+        pub stake_pool_lp_token_manager: ResourceManager,
         // Owner badge
-        owner_badge: ResourceAddress,
+        pub owner_badge: ResourceAddress,
         // Super admin badge
-        super_admin_badge_resource_address: ResourceAddress,
+        pub super_admin_badge_resource_address: ResourceAddress,
         // Admin badge
-        admin_badge_resource_address: ResourceAddress,
+        pub admin_badge_resource_address: ResourceAddress,
         // Contract status
-        contract_status: Status,
+        pub contract_status: Status,
         // Pool status
-        pool_status: Status,
+        pub pool_status: Status,
     }
 
     impl Stake {

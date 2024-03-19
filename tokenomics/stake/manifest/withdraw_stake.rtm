@@ -4,26 +4,29 @@ CALL_METHOD
     "lock_fee"
     Decimal("${amount}");
 
-# Withdraw nft claim receipt
+# Withdraw nft claim receipt or pool units
 CALL_METHOD
     Address("${account}")
     "withdraw"
     Address("${resource}")
     Decimal("${amount}");
 
-# Withdraw nft claim receipt from worktop and put them into bucket
-TAKE_ALL_FROM_WORKTOP
+# Withdraw nft claim receipt or pool units from worktop and put them into bucket
+TAKE_FROM_WORKTOP
     Address("${resource}")
+    Decimal("${amount}")
     Bucket("${bucket_name}");
 
-# Deposit nft claim receipt into method
+# Deposit nft claim receipt or pool units into method
 CALL_METHOD
     Address("${component}")
     "withdraw_stake"
-    Bucket("${bucket_name}");
-    
+    Some(Bucket("${bucket_name}")) # or None
+    Some(Bucket("${bucket_name}")); # or None
+
 # Return all tokens from worktop to account
 CALL_METHOD
     Address("${account}")
     "try_deposit_batch_or_refund"
-    Expression("ENTIRE_WORKTOP");
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>();
