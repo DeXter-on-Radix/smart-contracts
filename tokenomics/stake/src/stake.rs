@@ -39,15 +39,14 @@ mod stake {
             deposit => restrict_to: [OWNER, super_admin, admin];
             update_unstake_period => restrict_to: [OWNER, super_admin];
             update_dapp_definition_account => restrict_to: [OWNER];
-            update_owner_badge => restrict_to: [OWNER];
-            update_super_admin_badge => restrict_to: [OWNER];
-            update_admin_badge => restrict_to: [OWNER];
+            update_role_badge => restrict_to: [OWNER];
             emergency_switch => restrict_to: [OWNER];
         }
     }
     #[derive(Debug)]
     // Define what resources and data will be managed by the Stake component
     struct Stake {
+        // Component info
         // Native account blueprint
         pub dapp_definition_account: Global<Account>,
         pub dapp_definition_address: GlobalAddress,
@@ -126,7 +125,7 @@ mod stake {
             })
             .mint_roles(mint_roles! {
                 minter => rule!(require(global_caller(component_address)));
-                minter_updater => rule!(deny_all);
+                minter_updater => rule!(require(owner_badge.resource_address().clone()));
             })
             .burn_roles(burn_roles! {
                 burner => rule!(allow_all);
@@ -150,7 +149,7 @@ mod stake {
             })
             .non_fungible_data_update_roles(non_fungible_data_update_roles! {
                 non_fungible_data_updater => rule!(require(global_caller(component_address)));
-                non_fungible_data_updater_updater => rule!(deny_all);
+                non_fungible_data_updater_updater => rule!(require(owner_badge.resource_address().clone()));
             })
             .create_with_no_initial_supply();
 
@@ -185,11 +184,11 @@ mod stake {
             )
             .mint_roles(mint_roles! {
                 minter => rule!(require(global_caller(component_address)));
-                minter_updater => rule!(deny_all);
+                minter_updater => rule!(require(owner_badge.resource_address().clone()));
             })
             .burn_roles(burn_roles! {
               burner => rule!(require(global_caller(component_address)));
-              burner_updater => rule!(deny_all);
+              burner_updater => rule!(require(owner_badge.resource_address().clone()));
             })
             .create_with_no_initial_supply();
 
@@ -356,8 +355,8 @@ mod stake {
                 "Contract is not active."
             );
 
-             // Check if the pool is active
-             assert!(
+            // Check if the pool is active
+            assert!(
                 self.pool_status == Status::On,
                 "Pool is not active."
             );
@@ -422,7 +421,6 @@ mod stake {
             };
 
             // Define variable for pool units
-            // let pool_units_option = pool_units.unwrap().amount().clone();
             let pool_units_option = match &pool_units {
                 Some(ref pool_units) => Some(pool_units),
                 None => None,
@@ -430,18 +428,18 @@ mod stake {
             
             match (&self.contract_status, &self.pool_status) {
                 (Status::On, Status::On) => {
-            // Check if both pool units and nft claim receipt are the correct values
-                    assert!(pool_units_option.is_none(), "Only the NFT claim receipt must be provided for regular withdrawal");
-                    assert!(nft_claim_receipt_option.is_some(), "NFT claim receipt must be provided for regular withdrawal");
-            // Regular withdrawal logic here
-            // Check if the contract is active
-            assert!(
+          // Check if both pool units and nft claim receipt are the correct values
+          assert!(pool_units_option.is_none(), "Only the NFT claim receipt must be provided for regular withdrawal");
+          assert!(nft_claim_receipt_option.is_some(), "NFT claim receipt must be provided for regular withdrawal");
+          // Regular withdrawal logic here
+          // Check if the contract is active
+          assert!(
               self.contract_status == Status::On,
               "Contract is not active."
           );
 
           // Check if the pool is active
-            assert!(
+          assert!(
                 self.pool_status == Status::On,
                 "Pool is not active."
             );
@@ -512,15 +510,15 @@ mod stake {
                 (Status::Off, Status::On) => {
                     match (pool_units_option, nft_claim_receipt_option) {
                         (None, Some(_)) => {
-            // First scenario logic here
-            // Check if the contract is in emergency mode
-            assert!(
+                            // First scenario logic here
+                            // Check if the contract is in emergency mode
+          assert!(
               self.contract_status == Status::Off,
               "Contract is active, cannot withdraw in 'On' mode."
           );
 
-            // Check if the pool is active
-            assert!(
+          // Check if the pool is active
+          assert!(
                 self.pool_status == Status::On,
                 "Pool is not active."
             );
@@ -576,15 +574,15 @@ mod stake {
           return withdraw_tokens;
                         }
                         (Some(_), None) => {
-            // Second scenario logic here
-            // Check if the contract is in emergency mode
-            assert!(
+          // Second scenario logic here
+          // Check if the contract is in emergency mode
+          assert!(
               self.contract_status == Status::Off,
               "Contract is active, cannot withdraw in 'On' mode."
           );
 
-            // Check if the pool is active
-            assert!(
+          // Check if the pool is active
+          assert!(
                 self.pool_status == Status::On,
                 "Pool is not active."
             );
@@ -627,9 +625,9 @@ mod stake {
                 (Status::Off, Status::Off) => {
                   match (pool_units_option, nft_claim_receipt_option) {
                     (None, Some(_)) => {
-            // First scenario logic here
-            // Check if the contract is in emergency mode
-            assert!(
+          // First scenario logic here
+          // Check if the contract is in emergency mode
+          assert!(
               self.contract_status == Status::Off,
               "Contract is active, cannot withdraw in 'On' mode."
           );
@@ -680,9 +678,9 @@ mod stake {
           return withdraw_tokens;
                     }
                     (Some(_), None) => {
-            // Second scenario logic here
-            // Check if the contract is in emergency mode
-            assert!(
+          // Second scenario logic here
+          // Check if the contract is in emergency mode
+          assert!(
               self.contract_status == Status::Off,
               "Contract is active, cannot withdraw in 'On' mode."
           );
@@ -741,8 +739,8 @@ mod stake {
                 "Contract is not active."
             );
 
-             // Check if the pool is active
-             assert!(
+            // Check if the pool is active
+            assert!(
                 self.pool_status == Status::On,
                 "Pool is not active."
             );
@@ -768,8 +766,8 @@ mod stake {
                 "Contract is not active."
             );
 
-             // Check if the pool is active
-             assert!(
+            // Check if the pool is active
+            assert!(
                 self.pool_status == Status::On,
                 "Pool is not active."
             );
@@ -788,8 +786,8 @@ mod stake {
                 "Contract is not active."
             );
 
-             // Check if the pool is active
-             assert!(
+            // Check if the pool is active
+            assert!(
                 self.pool_status == Status::On,
                 "Pool is not active."
             );
@@ -848,30 +846,40 @@ mod stake {
 
         pub fn get_state(&self) {
             // Get the state of the contract
+
+            // Component info
             // Native account blueprint
             info!("Dapp definition account: {:?}", self.dapp_definition_account);
             info!("Dapp definition account address: {:?}", self.dapp_definition_address);
+
             // Component staking
             info!("Actual token vault: {:?}", self.stake_vault_actual);
             info!("Stake token: {:?}", self.stake_token_actual);
             info!("Pool token vault: {:?}", self.stake_vault_lp_token);
+
             // Define the unstake period in epochs
             info!("Unstake period: {:?}", self.unstake_period);
+
             // Component staking nft claim receipt
             info!("NFT claim receipt: {:?}", self.nft_claim_receipt_resource_manager);
+
             // Native OneResourcePool blueprint
             info!("Synthetic token pool: {:?}", self.stake_pool_synth);
             info!("Synthetic token manager: {:?}", self.stake_pool_synth_token_manager);
             info!("Pool token manager: {:?}", self.stake_pool_lp_token_manager);
-    
+
             // Owner badge
             info!("Owner badge: {:?}", self.owner_badge);
+
             // Super admin badge
             info!("Super admin badge: {:?}", self.super_admin_badge_resource_address);
+
             // Admin badge
             info!("Admin badge: {:?}", self.admin_badge_resource_address);
+
             // Contract status
             info!("Contract status: {:?}", self.contract_status);
+
             // Pool status
             info!("Pool status: {:?}", self.pool_status);
                 
@@ -884,8 +892,8 @@ mod stake {
                 "Contract is not active."
             );
 
-             // Check if the pool is active
-             assert!(
+            // Check if the pool is active
+            assert!(
                 self.pool_status == Status::On,
                 "Pool is not active."
             );
@@ -929,8 +937,8 @@ mod stake {
             // Check if the contract is active
             assert!(self.contract_status == Status::On, "Contract is not active");
 
-             // Check if the pool is active
-             assert!(
+            // Check if the pool is active
+            assert!(
                 self.pool_status == Status::On,
                 "Pool is not active."
             );
@@ -962,8 +970,8 @@ mod stake {
                 "Contract is not active."
             );
 
-             // Check if the pool is active
-             assert!(
+            // Check if the pool is active
+            assert!(
                 self.pool_status == Status::On,
                 "Pool is not active."
             );
@@ -980,67 +988,49 @@ mod stake {
             info!("Dapp definition account has been updated.");
         }
 
-        pub fn update_owner_badge(&mut self, new_owner_badge: ResourceAddress) {
+        pub fn update_role_badge(&mut self, new_owner_badge: Option<ResourceAddress>, new_super_admin_badge: Option<ResourceAddress> , new_admin_badge: Option<ResourceAddress>) {
             // Check if the contract is active
             assert!(
                 self.contract_status == Status::On,
                 "Contract is not active."
             );
 
-             // Check if the pool is active
-             assert!(
+            // Check if the pool is active
+            assert!(
                 self.pool_status == Status::On,
                 "Pool is not active."
             );
 
             // Check if the new owner badge is different from the old owner badge
-            assert!(new_owner_badge != self.owner_badge, "Owner badge cannot be the same as the old owner badge.");
-
-            // Update the owner badge
-            self.owner_badge = new_owner_badge;
-            info!("Owner badge has been updated.");
-        }
-
-        pub fn update_super_admin_badge(&mut self, new_super_admin_badge: ResourceAddress) {
-            // Check if the contract is active
-            assert!(
-                self.contract_status == Status::On,
-                "Contract is not active."
-            );
-
-             // Check if the pool is active
-             assert!(
-                self.pool_status == Status::On,
-                "Pool is not active."
-            );
+            match new_owner_badge {
+                Some(new_owner_badge) => {
+                    assert!(new_owner_badge != self.owner_badge, "Owner badge cannot be the same as the old owner badge.");
+                    self.owner_badge = new_owner_badge;
+                    info!("Owner badge has been updated.");
+                },
+                None => (),
+            }
 
             // Check if the new super admin badge is different from the old super admin badge
-            assert!(new_super_admin_badge != self.admin_badge_resource_address, "Super admin badge cannot be the same as the admin badge.");
-
-            // Update the super admin badge
-            self.super_admin_badge_resource_address = new_super_admin_badge;
-            info!("Super admin badge has been updated.");
-        }
-
-        pub fn update_admin_badge(&mut self, new_admin_badge: ResourceAddress) {
-            // Check if the contract is active
-            assert!(
-                self.contract_status == Status::On,
-                "Contract is not active."
-            );
-
-             // Check if the pool is active
-             assert!(
-                self.pool_status == Status::On,
-                "Pool is not active."
-            );
+            match new_super_admin_badge {
+                Some(new_super_admin_badge) => {
+                    assert!(new_super_admin_badge != self.super_admin_badge_resource_address, "Super admin badge cannot be the same as the admin badge.");
+                    self.super_admin_badge_resource_address = new_super_admin_badge;
+                    info!("Super admin badge has been updated.");
+                },
+                None => (),
+            }
 
             // Check if the new admin badge is different from the old admin badge
-            assert!(new_admin_badge != self.super_admin_badge_resource_address, "Admin badge cannot be the same as the super admin badge.");
+            match new_admin_badge {
+                Some(new_admin_badge) => {
+                    assert!(new_admin_badge != self.admin_badge_resource_address, "Admin badge cannot be the same as the super admin badge.");
+                    self.admin_badge_resource_address = new_admin_badge;
+                    info!("Admin badge has been updated.");
+                },
+                None => (),
+            }
 
-            // Update the admin badge
-            self.admin_badge_resource_address = new_admin_badge;
-            info!("Admin badge has been updated.");
         }
 
         pub fn emergency_switch(&mut self, toggle_contract: bool, toggle_pool: bool) {
