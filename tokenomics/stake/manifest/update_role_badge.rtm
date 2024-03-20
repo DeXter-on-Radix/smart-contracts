@@ -3,7 +3,7 @@ CALL_METHOD
     Address("${account}")
     "lock_fee"
     Decimal("${amount}");
-    
+
 # Create proof from fungible owner badge
 CALL_METHOD
     Address("${account}")
@@ -14,7 +14,7 @@ CALL_METHOD
 # Call method
 CALL_METHOD
     Address("${component}")
-    "update_owner_badge"
+    "update_role_badge"
     Some(Address("${resource}")) # or None
     Some(Address("${resource}")) # or None
     Some(Address("${resource}")); # or None
