@@ -125,7 +125,7 @@ mod stake {
             })
             .mint_roles(mint_roles! {
                 minter => rule!(require(global_caller(component_address)));
-                minter_updater => rule!(require(owner_badge.resource_address().clone()));
+                minter_updater => rule!(deny_all);
             })
             .burn_roles(burn_roles! {
                 burner => rule!(allow_all);
@@ -149,7 +149,7 @@ mod stake {
             })
             .non_fungible_data_update_roles(non_fungible_data_update_roles! {
                 non_fungible_data_updater => rule!(require(global_caller(component_address)));
-                non_fungible_data_updater_updater => rule!(require(owner_badge.resource_address().clone()));
+                non_fungible_data_updater_updater => rule!(deny_all);
             })
             .create_with_no_initial_supply();
 
@@ -184,11 +184,11 @@ mod stake {
             )
             .mint_roles(mint_roles! {
                 minter => rule!(require(global_caller(component_address)));
-                minter_updater => rule!(require(owner_badge.resource_address().clone()));
+                minter_updater => rule!(deny_all);
             })
             .burn_roles(burn_roles! {
               burner => rule!(require(global_caller(component_address)));
-              burner_updater => rule!(require(owner_badge.resource_address().clone()));
+              burner_updater => rule!(deny_all);
             })
             .create_with_no_initial_supply();
 
