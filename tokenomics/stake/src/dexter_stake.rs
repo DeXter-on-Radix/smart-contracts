@@ -20,7 +20,7 @@ pub struct NFTClaimReceiptData {
 }
 
 #[blueprint]
-mod stake {
+mod dexter_stake {
 
     enable_method_auth! {
         roles {
@@ -45,7 +45,7 @@ mod stake {
     }
     #[derive(Debug)]
     // Define what resources and data will be managed by the Stake component
-    struct Stake {
+    struct DeXterStake {
         // Component info
         // Native account blueprint
         pub dapp_definition_account: Global<Account>,
@@ -74,7 +74,7 @@ mod stake {
         pub pool_status: Status,
     }
 
-    impl Stake {
+    impl DeXterStake {
         pub fn instantiate_stake(
             contract_name: String,
             contract_description: String,
@@ -95,10 +95,10 @@ mod stake {
             owner_badge: Bucket,
             super_admin_badge_resource_address: ResourceAddress,
             admin_badge_resource_address: ResourceAddress,
-        ) -> (Global<Stake>, Bucket) {
+        ) -> (Global<DeXterStake>, Bucket) {
             // Set up actor virtual badge
             let (address_reservation, component_address) =
-                Runtime::allocate_component_address(Stake::blueprint_id());
+                Runtime::allocate_component_address(DeXterStake::blueprint_id());
 
             let global_component_caller_badge =
                 NonFungibleGlobalId::global_caller_badge(component_address);

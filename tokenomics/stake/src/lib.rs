@@ -1,1 +1,1 @@
-mod stake;
+mod dexter_stake;
