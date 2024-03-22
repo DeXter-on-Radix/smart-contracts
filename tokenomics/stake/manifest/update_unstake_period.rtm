@@ -4,12 +4,12 @@ CALL_METHOD
     "lock_fee"
     Decimal("${amount}");
 
-# Create proof from owner badge
+# Create proof from fungible owner badge
 CALL_METHOD
     Address("${account}")
-    "create_proof_of_non_fungibles"
+    "create_proof_of_amount"
     Address("${resource}")
-    Array<NonFungibleLocalId>(NonFungibleLocalId("${#non_fungible_local_id#}"));
+    Decimal("${amount}");
 
 # Call method
 CALL_METHOD
