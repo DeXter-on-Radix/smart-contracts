@@ -1,1 +1,1 @@
-mod dexter_stake;
+pub mod dexter_stake;
