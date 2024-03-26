@@ -19,7 +19,7 @@ TAKE_FROM_WORKTOP
 # Instantiate stake
 CALL_FUNCTION
     Address("${package}")
-    "Stake"
+    "DeXterStake"
     "instantiate_stake"
     "${contract_name}"
     "${contract_description}"

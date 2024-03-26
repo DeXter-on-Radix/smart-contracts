@@ -15,8 +15,8 @@ CALL_METHOD
 CALL_METHOD
     Address("${component}")
     "emergency_switch"
-    ${bool}
-    ${bool};
+    Some(Enum<${index}u8>()) # or None
+    Some(Enum<${index}u8>()); # or None
 
 # Drop all proofs
 DROP_ALL_PROOFS;

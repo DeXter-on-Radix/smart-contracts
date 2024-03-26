@@ -21,7 +21,6 @@ pub struct NFTClaimReceiptData {
 
 #[blueprint]
 mod dexter_stake {
-
     enable_method_auth! {
         roles {
             super_admin => updatable_by: [OWNER];
@@ -1033,32 +1032,29 @@ mod dexter_stake {
 
         }
 
-        pub fn emergency_switch(&mut self, toggle_contract: bool, toggle_pool: bool) {
-            // Toggle the contract status
-            match toggle_contract {
-                true => {
-                    match self.contract_status {
-                        Status::On => self.contract_status = Status::Off,
-                        Status::Off => self.contract_status = Status::On,
-                    }
-                    info!(
-                        "Contract status has been switched to {:?}.",
-                        self.contract_status
-                    );
+        pub fn emergency_switch(&mut self, contract_status: Option<Status>, pool_status: Option<Status>) {
+            // Check if the contract status is different from the new status
+            match contract_status {
+                Some(status) => {
+                    assert_ne!(self.contract_status, status, "Contract is already in the requested status: {:?}.", status);
+                    
+                    // Set the contract status
+                    self.contract_status = status;
+                    info!("Contract status has been switched to {:?}.", self.contract_status);
                 },
-                false => (),
+                None => (),
             }
         
-            // Toggle the pool status
-            match toggle_pool {
-                true => {
-                    match self.pool_status {
-                        Status::On => self.pool_status = Status::Off,
-                        Status::Off => self.pool_status = Status::On,
-                    }
+            // Check if the pool status is different from the new status
+            match pool_status {
+                Some(status) => {
+                    assert_ne!(self.pool_status, status, "Pool is already in the requested status: {:?}.", status);
+                    
+                    // Set the pool status
+                    self.pool_status = status;
                     info!("Pool status has been switched to {:?}.", self.pool_status);
                 },
-                false => (),
+                None => (),
             }
         }
 }
