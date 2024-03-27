@@ -93,7 +93,7 @@ fn dexter_stake_withdraw_stake_contract_on_pool_on_test() -> Result<(), RuntimeE
     // Assert
     assert_eq!(
         NativeBucket::amount(&xrd_bucket_regular, &mut env)?,
-        dec!("1000")
+        dec!(1000)
     );
     println!(
         "Tokens Withdrawn: {:?} (Contract On, Pool On)",
@@ -199,7 +199,7 @@ fn dexter_stake_withdraw_stake_contract_off_pool_on_test() -> Result<(), Runtime
     // Assert
     assert_eq!(
         NativeBucket::amount(&xrd_bucket_regular1, &mut env)?,
-        dec!("1000")
+        dec!(1000)
     );
     println!(
         "Tokens Withdrawn: {:?} (Contract Off, Pool On)",
@@ -215,7 +215,7 @@ fn dexter_stake_withdraw_stake_contract_off_pool_on_test() -> Result<(), Runtime
     // Assert
     assert_eq!(
         NativeBucket::amount(&xrd_bucket_regular2, &mut env)?,
-        dec!("1000")
+        dec!(1000)
     );
     println!(
         "Tokens Withdrawn: {:?} (Contract Off, Pool On)",
@@ -325,7 +325,7 @@ fn dexter_stake_withdraw_stake_contract_off_pool_off_test() -> Result<(), Runtim
     // Assert
     assert_eq!(
         NativeBucket::amount(&xrd_bucket_regular1, &mut env)?,
-        dec!("1000")
+        dec!(1000)
     );
     println!(
         "Tokens Withdrawn: {:?} (Contract Off, Pool Off)",
@@ -341,7 +341,7 @@ fn dexter_stake_withdraw_stake_contract_off_pool_off_test() -> Result<(), Runtim
     // Assert
     assert_eq!(
         NativeBucket::amount(&xrd_bucket_regular2, &mut env)?,
-        dec!("1000")
+        dec!(1000)
     );
     println!(
         "Tokens Withdrawn: {:?} (Contract Off, Pool Off)",

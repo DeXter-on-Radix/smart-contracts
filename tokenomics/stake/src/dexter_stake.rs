@@ -401,12 +401,12 @@ mod dexter_stake {
                 .mint_ruid_non_fungible(nft_claim_receipt_data)
                 .as_non_fungible();
 
-            // Store pool units inside the component
-            self.stake_vault_lp_token.put(pool_units);
+            // Store the pool units inside the component
             info!(
-                "Pool units vault: {:?}",
-                self.stake_vault_lp_token.amount().clone()
+                "Stored pool units: {:?}",
+                pool_units.amount().clone()
             );
+            self.stake_vault_lp_token.put(pool_units);
 
             // Return the nft claim receipt
             return nft_claim_receipt;
@@ -483,7 +483,7 @@ mod dexter_stake {
           
           // Redeem the pool units in return for the synthetic staking tokens
           let synth_tokens = self.stake_pool_synth.redeem(take_pool_units);
-          info!("Synthetic tokens: {:?}", synth_tokens.amount().clone());
+          info!("Redeemed synthetic tokens: {:?}", synth_tokens.amount().clone());
           
           // Withdraw the same amount of actual staking tokens from the vault
           let withdrawn_tokens = self.stake_vault_actual.take(synth_tokens.amount());
@@ -715,8 +715,8 @@ mod dexter_stake {
               withdraw_tokens.amount().clone()
           );
           
-          // Burn the pool units
-          info!("Burned pool units: {:?}", pool_units_option.unwrap().amount().clone());
+          // Store the pool units inside the component
+          info!("Stored pool units: {:?}", pool_units_option.unwrap().amount().clone());
           self.stake_vault_lp_token.put(pool_units.unwrap());
           
           // Return the withdrawn tokens

@@ -70,7 +70,7 @@ fn dexter_stake_stake_test() -> Result<(), RuntimeError> {
     let pool_units = dexter_stake_clone.stake(xrd_bucket_stake, &mut env)?;
 
     // Assert
-    assert_eq!(NativeBucket::amount(&pool_units, &mut env)?, dec!("1000"));
+    assert_eq!(NativeBucket::amount(&pool_units, &mut env)?, dec!(1000));
     println!("Pool Units: {:?}", pool_units.amount(&mut env)?);
 
     Ok(())

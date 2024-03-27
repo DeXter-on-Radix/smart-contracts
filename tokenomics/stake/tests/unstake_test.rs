@@ -80,7 +80,7 @@ fn dexter_stake_unstake_test() -> Result<(), RuntimeError> {
     // Assert
     assert_eq!(
         NativeBucket::amount(&nft_claim_receipt_regular_bucket, &mut env)?,
-        dec!("1")
+        dec!(1)
     );
     println!(
         "NFT Claim Receipt: {:?}",
